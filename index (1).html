@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FarmaTrack — Sistema de Visitas</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, set, push, onValue, update, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getStorage, ref as sRef, uploadBytes, getDownloadURL }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD2cI-DhaVhs_DlroLZxEWmHZB8VPPHOR8",
+    authDomain: "registro-de-visitas-5abad.firebaseapp.com",
+    databaseURL: "https://registro-de-visitas-5abad-default-rtdb.firebaseio.com",
+    projectId: "registro-de-visitas-5abad",
+    storageBucket: "registro-de-visitas-5abad.firebasestorage.app",
+    messagingSenderId: "666360422687",
+    appId: "1:666360422687:web:176fc28cf9d185d925102a",
+    measurementId: "G-0HVX4CLKDT"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  const storage = getStorage(app);
+
+  // Exponer globalmente para el resto del código
+  window._fb = { db, storage, ref, set, push, onValue, update, serverTimestamp, sRef, uploadBytes, getDownloadURL };
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<style>
+  :root {
+    --verde: #00C896; --verde-dark:#00A07A; --verde-glow:rgba(0,200,150,.15);
+    --rojo:#FF4B6E; --azul:#3B82F6; --amarillo:#F59E0B;
+    --bg:#0A0F1E; --bg2:#0F1729; --bg3:#162035;
+    --card:#1A2540; --card2:#1F2D4A; --border:rgba(255,255,255,.07);
+    --text:#E8EDF8; --text2:#8A96B0; --text3:#5A6480;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+  /* LOGIN */
+  #login-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;}
+  .login-wrap{width:100%;max-width:420px;padding:20px;animation:fadeUp .5s ease;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+  .logo-area{text-align:center;margin-bottom:40px;}
+  .logo-icon{width:64px;height:64px;background:var(--verde);border-radius:18px;display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:16px;box-shadow:0 0 40px var(--verde-glow);}
+  .logo-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;letter-spacing:-1px;}
+  .logo-title span{color:var(--verde);}
+  .logo-sub{color:var(--text2);font-size:14px;margin-top:6px;}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;}
+  .login-card h2{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:6px;}
+  .login-card p{color:var(--text2);font-size:14px;margin-bottom:28px;}
+  .role-tabs{display:flex;gap:8px;margin-bottom:24px;}
+  .role-tab{flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:.2s;text-align:center;}
+  .role-tab.active{background:var(--verde-glow);border-color:var(--verde);color:var(--verde);font-weight:500;}
+  .form-group{margin-bottom:16px;}
+  .form-group label{display:block;font-size:12px;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+  .form-group select,.form-group input{width:100%;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;transition:.2s;outline:none;}
+  .form-group select:focus,.form-group input:focus{border-color:var(--verde);}
+  .form-group select option{background:var(--bg2);}
+  .btn-login{width:100%;padding:14px;background:var(--verde);border:none;border-radius:12px;color:#000;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:.2s;margin-top:8px;}
+  .btn-login:hover{background:var(--verde-dark);}
+
+  /* APP */
+  #app{display:none;min-height:100vh;}
+  .topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .topbar-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;}
+  .topbar-logo span{color:var(--verde);}
+  .topbar-right{display:flex;align-items:center;gap:10px;}
+  .user-avatar{width:36px;height:36px;border-radius:10px;background:var(--verde);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#000;}
+  .user-info{line-height:1.2;}
+  .user-name{font-size:14px;font-weight:500;}
+  .user-role{font-size:11px;color:var(--verde);text-transform:uppercase;letter-spacing:.5px;}
+  .conn-badge{display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 8px;border-radius:6px;background:var(--bg3);}
+  .conn-dot{width:6px;height:6px;border-radius:50%;}
+  .conn-dot.online{background:var(--verde);animation:pulse 2s infinite;}
+  .conn-dot.offline{background:var(--text3);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .btn-logout{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;transition:.2s;}
+  .btn-logout:hover{border-color:var(--rojo);color:var(--rojo);}
+
+  .nav-tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+  .nav-tab{padding:14px 20px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:.2s;white-space:nowrap;flex-shrink:0;}
+  .nav-tab.active{color:var(--verde);border-bottom-color:var(--verde);}
+
+  .tab-content{display:none;padding:20px;max-width:1200px;margin:0 auto;}
+  .tab-content.active{display:block;}
+
+  /* STATS */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;position:relative;overflow:hidden;}
+  .stat-card::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:0 16px 0 60px;opacity:.15;}
+  .stat-card.verde::before{background:var(--verde);}
+  .stat-card.azul::before{background:var(--azul);}
+  .stat-card.amarillo::before{background:var(--amarillo);}
+  .stat-card.rojo::before{background:var(--rojo);}
+  .stat-icon{font-size:20px;margin-bottom:12px;}
+  .stat-num{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1;}
+  .stat-card.verde .stat-num{color:var(--verde);}
+  .stat-card.azul .stat-num{color:var(--azul);}
+  .stat-card.amarillo .stat-num{color:var(--amarillo);}
+  .stat-card.rojo .stat-num{color:var(--rojo);}
+  .stat-label{font-size:12px;color:var(--text2);margin-top:6px;}
+
+  /* MAPA */
+  .map-section{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:24px;}
+  .map-header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+  .map-header h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;}
+  .live-badge{display:flex;align-items:center;gap:6px;background:rgba(0,200,150,.1);border:1px solid var(--verde);padding:4px 10px;border-radius:20px;font-size:11px;color:var(--verde);}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--verde);animation:pulse 1.5s infinite;}
+  #mapa,#mapa-corp{height:360px;}
+
+  /* VISITAS */
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .section-header h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;}
+  .visitas-list{display:flex;flex-direction:column;gap:10px;}
+  .visita-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;align-items:flex-start;gap:14px;transition:.2s;animation:fadeUp .3s ease;}
+  .visita-card:hover{border-color:var(--verde);background:var(--card2);}
+  .visita-status{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+  .visita-status.en-curso{background:var(--verde);box-shadow:0 0 8px var(--verde);}
+  .visita-status.completada{background:var(--azul);}
+  .visita-info{flex:1;min-width:0;}
+  .visita-farmacia{font-weight:500;font-size:15px;}
+  .visita-meta{font-size:12px;color:var(--text2);margin-top:3px;}
+  .visita-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .tag{padding:3px 8px;border-radius:6px;font-size:11px;font-weight:500;}
+  .tag.verde{background:rgba(0,200,150,.15);color:var(--verde);}
+  .tag.azul{background:rgba(59,130,246,.15);color:var(--azul);}
+  .tag.amarillo{background:rgba(245,158,11,.15);color:var(--amarillo);}
+  .tag.gris{background:var(--bg3);color:var(--text2);}
+  .visita-hora{font-size:12px;color:var(--text2);text-align:right;flex-shrink:0;}
+  .btn-fin-visita{background:var(--azul);color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;transition:.2s;}
+  .btn-fin-visita:hover{opacity:.85;}
+
+  /* BTN PRIMARY */
+  .btn-primary{background:var(--verde);color:#000;border:none;padding:12px 20px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:8px;}
+  .btn-primary:hover{background:var(--verde-dark);}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:.3s;}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal{background:var(--card2);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:540px;transform:translateY(100%);transition:.35s cubic-bezier(.4,0,.2,1);max-height:90vh;overflow-y:auto;}
+  .modal-overlay.open .modal{transform:translateY(0);}
+  .modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 24px;}
+  .modal h2{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;}
+  .modal p{color:var(--text2);font-size:14px;margin-bottom:24px;}
+  .modal .form-group select,.modal .form-group input,.modal .form-group textarea{width:100%;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:.2s;}
+  .modal .form-group textarea{resize:vertical;min-height:80px;}
+  .modal .form-group select:focus,.modal .form-group input:focus,.modal .form-group textarea:focus{border-color:var(--verde);}
+  .foto-upload{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:.2s;}
+  .foto-upload:hover{border-color:var(--verde);background:var(--verde-glow);}
+  .foto-upload input{display:none;}
+  .foto-previews{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .foto-preview{width:60px;height:60px;border-radius:8px;object-fit:cover;}
+  .gps-indicator{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--text2);}
+  .gps-indicator.ok{border-color:var(--verde);color:var(--verde);}
+  .gps-indicator.loading{border-color:var(--amarillo);color:var(--amarillo);}
+  .gps-indicator.error{border-color:var(--rojo);color:var(--rojo);}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .btn-cancel{flex:1;padding:13px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'Syne',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;}
+  .btn-cancel:hover{border-color:var(--rojo);color:var(--rojo);}
+  .btn-submit{flex:2;padding:13px;border-radius:12px;border:none;background:var(--verde);color:#000;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;}
+  .btn-submit:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* SUPERVISORES */
+  .supervisores-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+  .supervisor-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;transition:.2s;}
+  .supervisor-card:hover{border-color:var(--verde);}
+  .sup-header{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+  .sup-avatar{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#000;}
+  .sup-name{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;}
+  .sup-zone{font-size:12px;color:var(--text2);margin-top:2px;}
+  .sup-online{display:flex;align-items:center;gap:5px;font-size:11px;margin-top:4px;}
+  .sup-online.online{color:var(--verde);}
+  .sup-online.offline{color:var(--text3);}
+  .sup-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .sup-stat{background:var(--bg3);border-radius:10px;padding:10px 12px;}
+  .sup-stat-num{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;}
+  .sup-stat-label{font-size:11px;color:var(--text2);margin-top:2px;}
+  .sup-last{font-size:12px;color:var(--text2);margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+
+  /* HISTORIAL */
+  .filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .filtro-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;transition:.2s;}
+  .filtro-btn.active{background:var(--verde-glow);border-color:var(--verde);color:var(--verde);}
+  .tabla-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;}
+  thead th{padding:12px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody td{padding:12px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.03);}
+  tbody tr:hover{background:var(--card2);}
+  tbody tr:last-child td{border-bottom:none;}
+  .badge{padding:3px 8px;border-radius:6px;font-size:11px;font-weight:500;}
+
+  /* EMPTY */
+  .empty{text-align:center;padding:60px 20px;color:var(--text2);}
+  .empty-icon{font-size:48px;margin-bottom:16px;opacity:.4;}
+  .empty h3{font-family:'Syne',sans-serif;font-size:18px;color:var(--text);margin-bottom:8px;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--verde);color:#000;padding:12px 24px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;z-index:9999;transition:.35s cubic-bezier(.4,0,.2,1);box-shadow:0 8px 32px rgba(0,200,150,.4);white-space:nowrap;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .toast.error{background:var(--rojo);box-shadow:0 8px 32px rgba(255,75,110,.4);color:#fff;}
+
+  /* LOADING OVERLAY */
+  #loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+  .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--verde);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #loading-overlay p{color:var(--text2);font-size:14px;}
+
+  @media(max-width:600px){
+    .tab-content{padding:12px;}
+    .nav-tab{padding:12px 14px;font-size:12px;}
+    .topbar{padding:0 12px;}
+    #mapa,#mapa-corp{height:260px;}
+    .modal{padding:20px 16px 32px;}
+    .topbar-right .user-info{display:none;}
+  }
+  @media(min-width:768px){
+    .modal-overlay{align-items:center;}
+    .modal{border-radius:24px;}
+  }
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-track{background:var(--bg2);}
+  ::-webkit-scrollbar-thumb{background:var(--card2);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-overlay">
+  <div class="logo-icon" style="width:64px;height:64px;background:var(--verde);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 0 40px rgba(0,200,150,.2)">💊</div>
+  <div class="spinner"></div>
+  <p>Conectando con Firebase...</p>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen" style="display:none">
+  <div class="login-wrap">
+    <div class="logo-area">
+      <div class="logo-icon">💊</div>
+      <div class="logo-title">Farma<span>Track</span></div>
+      <div class="logo-sub">Sistema de visitas y geolocalización en tiempo real</div>
+    </div>
+    <div class="login-card">
+      <h2>Iniciar sesión</h2>
+      <p>Selecciona tu rol y usuario para continuar</p>
+      <div class="role-tabs">
+        <div class="role-tab active" onclick="setRole('supervisor')">👤 Supervisor</div>
+        <div class="role-tab" onclick="setRole('corporativo')">🏢 Corporativo</div>
+      </div>
+      <div class="form-group" id="select-usuario-group">
+        <label>Usuario</label>
+        <select id="select-usuario">
+          <option value="">Selecciona tu usuario...</option>
+          <option value="sup1">Carlos Mendoza — Zona Norte</option>
+          <option value="sup2">Ana García — Zona Sur</option>
+          <option value="sup3">Roberto López — Zona Este</option>
+          <option value="sup4">María Torres — Zona Oeste</option>
+        </select>
+      </div>
+      <div class="form-group" id="select-admin-group" style="display:none">
+        <label>Contraseña corporativa</label>
+        <input type="password" id="input-admin" placeholder="Contraseña..."/>
+      </div>
+      <button class="btn-login" onclick="login()">Entrar al sistema →</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">Farma<span>Track</span></div>
+    <div class="topbar-right">
+      <div class="conn-badge">
+        <div class="conn-dot offline" id="conn-dot"></div>
+        <span id="conn-text" style="color:var(--text3)">Conectando</span>
+      </div>
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div class="user-info">
+        <div class="user-name" id="user-name-display">-</div>
+        <div class="user-role" id="user-role-display">-</div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Salir</button>
+    </div>
+  </div>
+  <div class="nav-tabs" id="nav-tabs"></div>
+
+  <!-- TAB INICIO (supervisor) -->
+  <div class="tab-content active" id="tab-inicio">
+    <div class="stats-grid">
+      <div class="stat-card verde"><div class="stat-icon">✅</div><div class="stat-num" id="stat-hoy">0</div><div class="stat-label">Visitas hoy</div></div>
+      <div class="stat-card azul"><div class="stat-icon">📍</div><div class="stat-num" id="stat-mes">0</div><div class="stat-label">Este mes</div></div>
+      <div class="stat-card amarillo"><div class="stat-icon">🏪</div><div class="stat-num" id="stat-pend">0</div><div class="stat-label">Por visitar</div></div>
+    </div>
+    <div class="section-header">
+      <h3>Mis visitas de hoy</h3>
+      <button class="btn-primary" onclick="abrirModal()">＋ Registrar visita</button>
+    </div>
+    <div class="visitas-list" id="visitas-hoy">
+      <div class="empty"><div class="empty-icon">🗓️</div><h3>Sin visitas registradas</h3><p>Toca "Registrar visita" para comenzar tu jornada</p></div>
+    </div>
+  </div>
+
+  <!-- TAB MAPA SUP -->
+  <div class="tab-content" id="tab-mapa">
+    <div class="map-section">
+      <div class="map-header">
+        <h3>📍 Mi ubicación en tiempo real</h3>
+        <div class="live-badge"><div class="live-dot"></div> EN VIVO</div>
+      </div>
+      <div id="mapa"></div>
+    </div>
+  </div>
+
+  <!-- TAB DASHBOARD CORP -->
+  <div class="tab-content" id="tab-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card verde"><div class="stat-icon">✅</div><div class="stat-num" id="stat-corp-hoy">0</div><div class="stat-label">Visitas hoy</div></div>
+      <div class="stat-card azul"><div class="stat-icon">👥</div><div class="stat-num">4</div><div class="stat-label">Supervisores</div></div>
+      <div class="stat-card amarillo"><div class="stat-icon">🏪</div><div class="stat-num">150</div><div class="stat-label">Sucursales</div></div>
+      <div class="stat-card rojo"><div class="stat-icon">⚠️</div><div class="stat-num" id="stat-sin">0</div><div class="stat-label">Sin visita semana</div></div>
+    </div>
+    <div class="map-section">
+      <div class="map-header">
+        <h3>🗺️ Supervisores en campo</h3>
+        <div class="live-badge"><div class="live-dot"></div> TIEMPO REAL</div>
+      </div>
+      <div id="mapa-corp"></div>
+    </div>
+    <div class="section-header"><h3>Últimas visitas — todos los supervisores</h3></div>
+    <div class="visitas-list" id="visitas-corp-list"></div>
+  </div>
+
+  <!-- TAB SUPERVISORES -->
+  <div class="tab-content" id="tab-supervisores">
+    <div class="section-header"><h3>Estado de supervisores</h3></div>
+    <div class="supervisores-grid" id="supervisores-grid"></div>
+  </div>
+
+  <!-- TAB HISTORIAL -->
+  <div class="tab-content" id="tab-historial">
+    <div class="filtros" id="filtros-wrap"></div>
+    <div class="tabla-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sucursal</th><th>Supervisor</th><th>Entrada</th>
+            <th>Salida</th><th>Duración</th><th>Tipo</th><th>Fotos</th><th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-historial"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="cerrarModalOut(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Registrar visita</h2>
+    <p>Tu ubicación GPS se guarda automáticamente en tiempo real</p>
+    <div class="form-group">
+      <label>Sucursal visitada</label>
+      <select id="sel-suc"><option value="">Selecciona la sucursal...</option></select>
+    </div>
+    <div class="form-group">
+      <label>Tipo de visita</label>
+      <select id="sel-tipo">
+        <option value="rutina">Rutina</option>
+        <option value="seguimiento">Seguimiento</option>
+        <option value="auditoría">Auditoría</option>
+        <option value="capacitación">Capacitación</option>
+        <option value="urgencia">Urgencia</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Comentarios / Observaciones</label>
+      <textarea id="inp-comentarios" placeholder="¿Qué observaste en esta visita?"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Fotos de la sucursal</label>
+      <div class="foto-upload" onclick="document.getElementById('inp-fotos').click()">
+        <input type="file" id="inp-fotos" accept="image/*" multiple onchange="prevFotos(event)">
+        <div style="font-size:24px;margin-bottom:6px">📷</div>
+        <p style="font-size:13px;color:var(--text2)">Toca para agregar fotos</p>
+      </div>
+      <div class="foto-previews" id="foto-previews"></div>
+    </div>
+    <div class="form-group">
+      <label>Ubicación GPS</label>
+      <div class="gps-indicator loading" id="gps-ind">
+        <span>📡</span><span id="gps-txt">Obteniendo ubicación...</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-submit" id="btn-submit" onclick="guardarVisita()" disabled>Guardar visita ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// =============================================
+// DATOS MAESTROS
+// =============================================
+const SUPS = {
+  sup1:{nombre:'Carlos Mendoza',zona:'Zona Norte',color:'#00C896',av:'CM',sucursales:Array.from({length:38},(_,i)=>i+1)},
+  sup2:{nombre:'Ana García',zona:'Zona Sur',color:'#3B82F6',av:'AG',sucursales:Array.from({length:37},(_,i)=>i+39)},
+  sup3:{nombre:'Roberto López',zona:'Zona Este',color:'#F59E0B',av:'RL',sucursales:Array.from({length:37},(_,i)=>i+76)},
+  sup4:{nombre:'María Torres',zona:'Zona Oeste',color:'#A855F7',av:'MT',sucursales:Array.from({length:38},(_,i)=>i+113)},
+};
+
+const BASE={lat:-25.5,lng:-54.6};
+function rLat(){return BASE.lat+(Math.random()-.5)*.4;}
+function rLng(){return BASE.lng+(Math.random()-.5)*.4;}
+
+const CIUDADES=['Ciudad del Este','Hernandarias','Minga Guazú','San Alberto','Naranjal','Mbaracayú','Itakyry','Los Cedrales','Mallorquín','Juan E. O\'Leary'];
+const SUCS={};
+for(let i=1;i<=150;i++){
+  SUCS[i]={id:i,nombre:`Farmacia #${String(i).padStart(3,'0')}`,ciudad:CIUDADES[Math.floor((i-1)/15)%CIUDADES.length],lat:rLat(),lng:rLng()};
+}
+
+// =============================================
+// ESTADO GLOBAL
+// =============================================
+const S={
+  role:null,uid:null,
+  visitas:{}, // local cache desde firebase
+  gps:null,
+  mapaS:null, mapaC:null,
+  supMarkers:{}, myMarker:null,
+  fotosFiles:[],
+  gpsWatch:null,
+};
+
+// =============================================
+// FIREBASE READY
+// =============================================
+window.addEventListener('firebase-ready', ()=>{
+  document.getElementById('loading-overlay').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  setConnStatus(true);
+});
+
+function setConnStatus(ok){
+  document.getElementById('conn-dot').className='conn-dot '+(ok?'online':'offline');
+  document.getElementById('conn-text').textContent=ok?'Conectado':'Sin conexión';
+  document.getElementById('conn-text').style.color=ok?'var(--verde)':'var(--text3)';
+}
+
+// =============================================
+// LOGIN / LOGOUT
+// =============================================
+let currentRole='supervisor';
+function setRole(r){
+  currentRole=r;
+  document.querySelectorAll('.role-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&r==='supervisor')||(i===1&&r==='corporativo')));
+  document.getElementById('select-usuario-group').style.display=r==='supervisor'?'block':'none';
+  document.getElementById('select-admin-group').style.display=r==='corporativo'?'block':'none';
+}
+function login(){
+  if(currentRole==='supervisor'){
+    const v=document.getElementById('select-usuario').value;
+    if(!v){showToast('Selecciona tu usuario','error');return;}
+    S.role='supervisor';S.uid=v;
+  } else {
+    if(document.getElementById('input-admin').value!=='admin123'){showToast('Contraseña incorrecta','error');return;}
+    S.role='corporativo';S.uid='corp';
+  }
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  iniciarApp();
+}
+function logout(){
+  if(S.gpsWatch) navigator.geolocation.clearWatch(S.gpsWatch);
+  // Marcar supervisor como offline
+  if(S.role==='supervisor' && window._fb){
+    const {db,ref,update}=window._fb;
+    update(ref(db,`supervisores/${S.uid}`),{online:false,lastSeen:Date.now()});
+  }
+  S.role=null;S.uid=null;S.gps=null;S.mapaS=null;S.mapaC=null;S.supMarkers={};S.myMarker=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+
+// =============================================
+// INICIAR APP
+// =============================================
+function iniciarApp(){
+  const sup=SUPS[S.uid];
+  if(S.role==='supervisor'){
+    document.getElementById('user-avatar').textContent=sup.av;
+    document.getElementById('user-avatar').style.background=sup.color;
+    document.getElementById('user-name-display').textContent=sup.nombre;
+    document.getElementById('user-role-display').textContent=sup.zona;
+    buildNav([
+      {label:'🏠 Inicio',tab:'tab-inicio'},
+      {label:'📍 Mi mapa',tab:'tab-mapa'},
+      {label:'📋 Historial',tab:'tab-historial'},
+    ]);
+    suscribirVisitas();
+    iniciarGPS();
+  } else {
+    document.getElementById('user-avatar').textContent='🏢';
+    document.getElementById('user-avatar').style.background='var(--card2)';
+    document.getElementById('user-avatar').style.fontSize='18px';
+    document.getElementById('user-name-display').textContent='Corporativo';
+    document.getElementById('user-role-display').textContent='Vista general';
+    buildNav([
+      {label:'📊 Dashboard',tab:'tab-dashboard'},
+      {label:'👥 Supervisores',tab:'tab-supervisores'},
+      {label:'📋 Historial',tab:'tab-historial'},
+    ]);
+    suscribirVisitas();
+    suscribirUbicaciones();
+  }
+}
+
+// =============================================
+// NAVEGACIÓN
+// =============================================
+function buildNav(tabs){
+  document.getElementById('nav-tabs').innerHTML=tabs.map((t,i)=>
+    `<div class="nav-tab${i===0?' active':''}" onclick="switchTab('${t.tab}',this)">${t.label}</div>`
+  ).join('');
+}
+function switchTab(id,el){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  if(id==='tab-mapa') setTimeout(()=>{if(!S.mapaS)initMapSup();else S.mapaS.invalidateSize();},100);
+  if(id==='tab-dashboard') setTimeout(()=>{if(!S.mapaC)initMapCorp();else S.mapaC.invalidateSize();},100);
+  if(id==='tab-historial') renderHistorial();
+  if(id==='tab-supervisores') renderSupervisores();
+}
+
+// =============================================
+// FIREBASE — SUSCRIPCIÓN VISITAS
+// =============================================
+function suscribirVisitas(){
+  const {db,ref,onValue}=window._fb;
+  onValue(ref(db,'visitas'), snap=>{
+    S.visitas={};
+    snap.forEach(c=>{ S.visitas[c.key]=c.val(); });
+    if(S.role==='supervisor') renderSupView();
+    else renderCorpView();
+  });
+}
+
+function suscribirUbicaciones(){
+  const {db,ref,onValue}=window._fb;
+  onValue(ref(db,'supervisores'), snap=>{
+    const datos={};
+    snap.forEach(c=>{ datos[c.key]=c.val(); });
+    actualizarMarkersCorp(datos);
+  });
+}
+
+// =============================================
+// GPS EN TIEMPO REAL
+// =============================================
+function iniciarGPS(){
+  if(!navigator.geolocation){setGPS('error','GPS no disponible');return;}
+  setGPS('loading','Obteniendo ubicación...');
+  S.gpsWatch=navigator.geolocation.watchPosition(
+    pos=>{
+      S.gps={lat:pos.coords.latitude,lng:pos.coords.lng||pos.coords.longitude};
+      setGPS('ok',`${S.gps.lat.toFixed(5)}, ${S.gps.lat.toFixed(5)}`);
+      document.getElementById('btn-submit').disabled=false;
+      publicarUbicacion();
+    },
+    ()=>{
+      // Demo fallback
+      S.gps={lat:BASE.lat+(Math.random()-.5)*.05,lng:BASE.lng+(Math.random()-.5)*.05};
+      setGPS('ok',`${S.gps.lat.toFixed(5)}, ${S.gps.lng.toFixed(5)} (demo)`);
+      document.getElementById('btn-submit').disabled=false;
+      publicarUbicacion();
+    },
+    {enableHighAccuracy:true,maximumAge:30000,timeout:10000}
+  );
+}
+
+function publicarUbicacion(){
+  if(!S.gps||!window._fb||S.role!=='supervisor') return;
+  const {db,ref,set}=window._fb;
+  set(ref(db,`supervisores/${S.uid}`),{
+    ...S.gps, nombre:SUPS[S.uid].nombre, zona:SUPS[S.uid].zona,
+    color:SUPS[S.uid].color, av:SUPS[S.uid].av,
+    online:true, lastSeen:Date.now()
+  });
+}
+
+// =============================================
+// RENDER SUPERVISOR
+// =============================================
+function renderSupView(){
+  const hoy=todayStr();
+  const todas=Object.values(S.visitas);
+  const mias=todas.filter(v=>v.supId===S.uid);
+  const misHoy=mias.filter(v=>v.entrada&&v.entrada.startsWith(hoy));
+  document.getElementById('stat-hoy').textContent=misHoy.length;
+  document.getElementById('stat-mes').textContent=mias.filter(v=>v.entrada&&v.entrada.startsWith(hoy.slice(0,7))).length;
+  const visitadas=new Set(mias.map(v=>v.sucId));
+  document.getElementById('stat-pend').textContent=SUPS[S.uid].sucursales.filter(s=>!visitadas.has(String(s))).length;
+
+  const el=document.getElementById('visitas-hoy');
+  if(!misHoy.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🗓️</div><h3>Sin visitas hoy</h3><p>Toca "Registrar visita" para comenzar</p></div>`;
+    return;
+  }
+  el.innerHTML=misHoy.slice().sort((a,b)=>new Date(b.entrada)-new Date(a.entrada))
+    .map(v=>cardVisita(v)).join('');
+}
+
+// =============================================
+// RENDER CORPORATIVO
+// =============================================
+function renderCorpView(){
+  const hoy=todayStr();
+  const todas=Object.values(S.visitas);
+  const hoyV=todas.filter(v=>v.entrada&&v.entrada.startsWith(hoy));
+  document.getElementById('stat-corp-hoy').textContent=hoyV.length;
+  const semana=new Date();semana.setDate(semana.getDate()-7);
+  const visitadasSem=new Set(todas.filter(v=>v.entrada&&new Date(v.entrada)>semana).map(v=>v.sucId));
+  document.getElementById('stat-sin').textContent=150-visitadasSem.size;
+  // Últimas visitas
+  const el=document.getElementById('visitas-corp-list');
+  const ultimas=todas.slice().sort((a,b)=>new Date(b.entrada||0)-new Date(a.entrada||0)).slice(0,12);
+  el.innerHTML=ultimas.length?ultimas.map(v=>cardVisita(v)).join(''):`<div class="empty"><div class="empty-icon">📊</div><h3>Sin visitas registradas</h3></div>`;
+  renderSupervisores();
+}
+
+function renderSupervisores(){
+  const hoy=todayStr();
+  const todas=Object.values(S.visitas);
+  document.getElementById('supervisores-grid').innerHTML=Object.entries(SUPS).map(([id,sup])=>{
+    const mias=todas.filter(v=>v.supId===id);
+    const hoyV=mias.filter(v=>v.entrada&&v.entrada.startsWith(hoy)).length;
+    const mesV=mias.filter(v=>v.entrada&&v.entrada.startsWith(hoy.slice(0,7))).length;
+    const ultima=mias.sort((a,b)=>new Date(b.entrada||0)-new Date(a.entrada||0))[0];
+    const activa=mias.some(v=>v.estado==='en-curso');
+    return `<div class="supervisor-card">
+      <div class="sup-header">
+        <div class="sup-avatar" style="background:${sup.color}">${sup.av}</div>
+        <div>
+          <div class="sup-name">${sup.nombre}</div>
+          <div class="sup-zone">${sup.zona} · ${sup.sucursales.length} sucursales</div>
+          <div class="sup-online ${activa?'online':'offline'}">
+            <div style="width:6px;height:6px;border-radius:50%;background:currentColor"></div>
+            ${activa?'En visita activa':'Sin actividad ahora'}
+          </div>
+        </div>
+      </div>
+      <div class="sup-stats">
+        <div class="sup-stat"><div class="sup-stat-num" style="color:${sup.color}">${hoyV}</div><div class="sup-stat-label">Hoy</div></div>
+        <div class="sup-stat"><div class="sup-stat-num" style="color:${sup.color}">${mesV}</div><div class="sup-stat-label">Este mes</div></div>
+      </div>
+      <div class="sup-last">${ultima?`Última: ${SUCS[ultima.sucId]?.nombre||ultima.sucId} · ${fmtH(new Date(ultima.entrada))}`:'Sin visitas aún'}</div>
+    </div>`;
+  }).join('');
+}
+
+// =============================================
+// TARJETA VISITA
+// =============================================
+function cardVisita(v){
+  const suc=SUCS[v.sucId]||SUCS[parseInt(v.sucId)];
+  const sup=SUPS[v.supId];
+  const entrada=v.entrada?new Date(v.entrada):null;
+  const salida=v.salida?new Date(v.salida):null;
+  const dur=salida&&entrada?Math.round((salida-entrada)/60000):null;
+  const fbKey=Object.keys(S.visitas).find(k=>S.visitas[k]===v)||'';
+  return `<div class="visita-card">
+    <div class="visita-status ${v.estado||'completada'}"></div>
+    <div class="visita-info">
+      <div class="visita-farmacia">${suc?suc.nombre:v.sucId}</div>
+      <div class="visita-meta">${suc?suc.ciudad:''} · ${sup?sup.nombre:v.supId}</div>
+      <div class="visita-tags">
+        <span class="tag gris">${v.tipo||'rutina'}</span>
+        ${v.estado==='en-curso'?'<span class="tag verde">En curso</span>':'<span class="tag azul">Completada</span>'}
+        ${v.fotos>0?`<span class="tag amarillo">📷 ${v.fotos}</span>`:''}
+        ${dur?`<span class="tag gris">⏱ ${dur}min</span>`:''}
+      </div>
+      ${v.comentarios?`<div style="font-size:13px;color:var(--text2);margin-top:6px">"${v.comentarios.slice(0,80)}${v.comentarios.length>80?'...':''}"</div>`:''}
+      ${v.estado==='en-curso'&&S.role==='supervisor'&&v.supId===S.uid?`<button class="btn-fin-visita" onclick="finalizarVisita('${fbKey}')">✓ Finalizar visita</button>`:''}
+    </div>
+    <div class="visita-hora">
+      ${entrada?fmtH(entrada):'—'}<br>
+      ${salida?fmtH(salida):'<span style="color:var(--verde)">Activa</span>'}
+    </div>
+  </div>`;
+}
+
+// =============================================
+// MAPAS
+// =============================================
+function initMapSup(){
+  const c=S.gps||BASE;
+  S.mapaS=L.map('mapa').setView([c.lat,c.lng],13);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(S.mapaS);
+  if(S.gps) colocarMiMarcador();
+  // Sucursales del supervisor
+  const hoy=todayStr();
+  const visitadas=new Set(Object.values(S.visitas).filter(v=>v.supId===S.uid&&v.entrada&&v.entrada.startsWith(hoy)).map(v=>String(v.sucId)));
+  SUPS[S.uid].sucursales.slice(0,40).forEach(sid=>{
+    const s=SUCS[sid];
+    const ok=visitadas.has(String(sid));
+    const icon=L.divIcon({html:`<div style="background:${ok?'#00C896':'#5A6480'};width:9px;height:9px;border-radius:50%;border:2px solid ${ok?'#fff':'#2a3050'}"></div>`,className:'',iconSize:[9,9]});
+    L.marker([s.lat,s.lng],{icon}).addTo(S.mapaS).bindPopup(`<b>${s.nombre}</b><br>${s.ciudad}${ok?'<br>✅ Visitada hoy':''}`);
+  });
+}
+
+function colocarMiMarcador(){
+  if(!S.gps||!S.mapaS)return;
+  const sup=SUPS[S.uid];
+  const icon=L.divIcon({html:`<div style="background:${sup.color};color:#000;font-size:11px;font-weight:700;padding:5px 8px;border-radius:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.5)">${sup.av} Tú</div>`,className:'',iconSize:[60,28],iconAnchor:[30,14]});
+  if(S.myMarker) S.myMarker.setLatLng([S.gps.lat,S.gps.lng]);
+  else S.myMarker=L.marker([S.gps.lat,S.gps.lng],{icon}).addTo(S.mapaS);
+  S.mapaS.setView([S.gps.lat,S.gps.lng],14);
+}
+
+function initMapCorp(){
+  S.mapaC=L.map('mapa-corp').setView([BASE.lat,BASE.lng],11);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(S.mapaC);
+  // Pins sucursales (subset)
+  Object.values(SUCS).filter((_,i)=>i%4===0).forEach(s=>{
+    const icon=L.divIcon({html:`<div style="background:#1A2540;width:7px;height:7px;border-radius:50%;border:1px solid #3a4060"></div>`,className:'',iconSize:[7,7]});
+    L.marker([s.lat,s.lng],{icon}).addTo(S.mapaC).bindPopup(`<b>${s.nombre}</b><br>${s.ciudad}`);
+  });
+  // Suscribir ubicaciones de supervisores
+  const {db,ref,onValue}=window._fb;
+  onValue(ref(db,'supervisores'),snap=>{
+    const datos={};
+    snap.forEach(c=>{datos[c.key]=c.val();});
+    actualizarMarkersCorp(datos);
+  });
+}
+
+function actualizarMarkersCorp(datos){
+  if(!S.mapaC)return;
+  Object.entries(datos).forEach(([id,d])=>{
+    if(!d.lat||!d.lng)return;
+    const sup=SUPS[id];
+    if(!sup)return;
+    const online=d.online&&(Date.now()-d.lastSeen)<120000;
+    const icon=L.divIcon({
+      html:`<div style="background:${sup.color};color:#000;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.5);${online?'border:2px solid #fff':''}">${sup.av} ${sup.nombre.split(' ')[0]}</div>`,
+      className:'',iconSize:[110,28],iconAnchor:[55,14]
+    });
+    if(S.supMarkers[id]) S.supMarkers[id].setLatLng([d.lat,d.lng]).setIcon(icon);
+    else S.supMarkers[id]=L.marker([d.lat,d.lng],{icon}).addTo(S.mapaC)
+      .bindPopup(`<b>${sup.nombre}</b><br>${sup.zona}<br>${online?'🟢 En línea':'⚫ Sin actividad'}`);
+  });
+}
+
+// =============================================
+// MODAL REGISTRAR VISITA
+// =============================================
+function abrirModal(){
+  const sup=SUPS[S.uid];
+  document.getElementById('sel-suc').innerHTML='<option value="">Selecciona la sucursal...</option>'+
+    sup.sucursales.map(sid=>`<option value="${sid}">${SUCS[sid].nombre} — ${SUCS[sid].ciudad}</option>`).join('');
+  S.fotosFiles=[];
+  document.getElementById('foto-previews').innerHTML='';
+  document.getElementById('inp-comentarios').value='';
+  document.getElementById('modal-overlay').classList.add('open');
+  setGPS('loading','Obteniendo GPS...');
+  document.getElementById('btn-submit').disabled=true;
+  if(S.gps){
+    setGPS('ok',`${S.gps.lat.toFixed(5)}, ${S.gps.lng.toFixed(5)}`);
+    document.getElementById('btn-submit').disabled=false;
+  } else iniciarGPS();
+}
+function cerrarModal(){document.getElementById('modal-overlay').classList.remove('open');}
+function cerrarModalOut(e){if(e.target===document.getElementById('modal-overlay'))cerrarModal();}
+
+function prevFotos(e){
+  S.fotosFiles=Array.from(e.target.files);
+  const c=document.getElementById('foto-previews');
+  c.innerHTML='';
+  S.fotosFiles.forEach(f=>{
+    const img=document.createElement('img');
+    img.src=URL.createObjectURL(f);img.className='foto-preview';
+    c.appendChild(img);
+  });
+}
+
+async function guardarVisita(){
+  const sucId=document.getElementById('sel-suc').value;
+  if(!sucId){showToast('Selecciona una sucursal','error');return;}
+  if(!S.gps){showToast('Esperando GPS...','error');return;}
+  document.getElementById('btn-submit').disabled=true;
+  document.getElementById('btn-submit').textContent='Guardando...';
+
+  // Subir fotos a Storage
+  let fotosUrls=[];
+  if(S.fotosFiles.length>0 && window._fb){
+    const {storage,sRef,uploadBytes,getDownloadURL}=window._fb;
+    for(const f of S.fotosFiles){
+      try{
+        const r=sRef(storage,`visitas/${Date.now()}_${f.name}`);
+        const snap=await uploadBytes(r,f);
+        const url=await getDownloadURL(snap.ref);
+        fotosUrls.push(url);
+      }catch(e){console.warn('Error subiendo foto',e);}
+    }
+  }
+
+  const visita={
+    supId:S.uid,sucId,
+    tipo:document.getElementById('sel-tipo').value,
+    comentarios:document.getElementById('inp-comentarios').value.trim(),
+    fotos:fotosUrls.length,
+    fotosUrls,
+    lat:S.gps.lat,lng:S.gps.lng,
+    entrada:new Date().toISOString(),
+    salida:null,estado:'en-curso',
+  };
+
+  const {db,ref,push}=window._fb;
+  push(ref(db,'visitas'),visita)
+    .then(()=>{
+      cerrarModal();
+      showToast('✅ Visita registrada en tiempo real');
+    })
+    .catch(e=>{
+      console.error(e);
+      showToast('Error guardando en Firebase','error');
+    })
+    .finally(()=>{
+      document.getElementById('btn-submit').disabled=false;
+      document.getElementById('btn-submit').textContent='Guardar visita ✓';
+    });
+}
+
+function finalizarVisita(key){
+  if(!key||!window._fb)return;
+  const {db,ref,update}=window._fb;
+  update(ref(db,`visitas/${key}`),{salida:new Date().toISOString(),estado:'completada'})
+    .then(()=>showToast('✅ Visita finalizada'))
+    .catch(()=>showToast('Error al finalizar','error'));
+}
+
+// =============================================
+// HISTORIAL
+// =============================================
+function renderHistorial(){
+  const isCorp=S.role==='corporativo';
+  let visitas=Object.values(S.visitas);
+  if(!isCorp) visitas=visitas.filter(v=>v.supId===S.uid);
+  visitas.sort((a,b)=>new Date(b.entrada||0)-new Date(a.entrada||0));
+
+  const fw=document.getElementById('filtros-wrap');
+  if(isCorp){
+    fw.innerHTML=['Todos',...Object.values(SUPS).map(s=>s.nombre)].map((f,i)=>
+      `<button class="filtro-btn${i===0?' active':''}" onclick="filtrarH(this,'${i===0?'todos':f}')">${f}</button>`
+    ).join('');
+  } else {
+    fw.innerHTML=['Todos','rutina','seguimiento','auditoría','capacitación','urgencia'].map((f,i)=>
+      `<button class="filtro-btn${i===0?' active':''}" onclick="filtrarH(this,'${f}')">${f.charAt(0).toUpperCase()+f.slice(1)}</button>`
+    ).join('');
+  }
+  renderTabla(visitas);
+}
+function filtrarH(btn,f){
+  document.querySelectorAll('.filtro-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  let v=Object.values(S.visitas);
+  if(S.role==='supervisor') v=v.filter(x=>x.supId===S.uid);
+  if(f!=='todos'&&f!=='Todos'){
+    if(S.role==='corporativo'){
+      const id=Object.entries(SUPS).find(([,s])=>s.nombre===f)?.[0];
+      if(id) v=v.filter(x=>x.supId===id);
+    } else {
+      v=v.filter(x=>x.tipo===f);
+    }
+  }
+  renderTabla(v.sort((a,b)=>new Date(b.entrada||0)-new Date(a.entrada||0)));
+}
+function renderTabla(visitas){
+  const tb=document.getElementById('tabla-historial');
+  if(!visitas.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text2)">Sin visitas</td></tr>';return;}
+  tb.innerHTML=visitas.map(v=>{
+    const suc=SUCS[v.sucId]||SUCS[parseInt(v.sucId)];
+    const sup=SUPS[v.supId];
+    const e=v.entrada?new Date(v.entrada):null;
+    const s=v.salida?new Date(v.salida):null;
+    const dur=e&&s?Math.round((s-e)/60000)+' min':'—';
+    const col=v.estado==='en-curso'?'var(--verde)':'var(--azul)';
+    return `<tr>
+      <td>${suc?.nombre||v.sucId}<br><span style="font-size:11px;color:var(--text2)">${suc?.ciudad||''}</span></td>
+      <td><span style="color:${sup?.color||'var(--text)'}">${sup?.nombre||v.supId}</span></td>
+      <td>${e?fmtFH(e):'—'}</td>
+      <td>${s?fmtFH(s):'<span style="color:var(--verde)">Activa</span>'}</td>
+      <td>${dur}</td>
+      <td>${v.tipo||'—'}</td>
+      <td>${v.fotos>0?`📷 ${v.fotos}`:'—'}</td>
+      <td><span class="badge" style="background:${col}22;color:${col}">${v.estado||'?'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// =============================================
+// GPS INDICATOR
+// =============================================
+function setGPS(s,t){
+  const el=document.getElementById('gps-ind');
+  el.className='gps-indicator'+(s==='ok'?' ok':s==='loading'?' loading':' error');
+  document.getElementById('gps-txt').textContent=t;
+}
+
+// =============================================
+// UTILS
+// =============================================
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function fmtH(d){return d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});}
+function fmtFH(d){return d.toLocaleDateString('es',{day:'2-digit',month:'2-digit'})+' '+fmtH(d);}
+
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast'+(type?' '+type:'');
+  setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+document.getElementById('input-admin').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+</script>
+</body>
+</html>
