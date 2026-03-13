@@ -602,11 +602,7 @@ const SUPS = {
 };
 
 const BASE={lat:-25.3266,lng:-56.8887};
-const CIUDADES=['Ciudad del Este','Hernandarias','Minga Guazú','San Alberto','Naranjal','Mbaracayú','Itakyry','Los Cedrales','Mallorquín','Juan E. O\'Leary'];
-const SUCS={};
-for(let i=1;i<=150;i++){
-  SUCS[i]={id:i,nombre:`Farmacia #${String(i).padStart(3,'0')}`,ciudad:CIUDADES[Math.floor((i-1)/15)%CIUDADES.length],lat:rLat(),lng:rLng()};
-}
+
 
 // =============================================
 // ESTADO GLOBAL
