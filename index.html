@@ -290,6 +290,7 @@
         <div class="user-name" id="user-name-display">-</div>
         <div class="user-role" id="user-role-display">-</div>
       </div>
+      <a href="https://app.powerbi.com/links/wQDVGHHkPt?ctid=4bf7725e-88a0-4ca8-84ed-f6dc47245d97&pbi_source=linkShare" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#F2C811;color:#000;font-weight:600;font-size:12px;padding:7px 12px;border-radius:8px;text-decoration:none;margin-right:6px;">📊 Power BI</a>
       <button class="btn-logout" onclick="logout()">Salir</button>
     </div>
   </div>
@@ -699,7 +700,7 @@ function cardVisita(v){
 function initMapSup(){
   const c=S.gps||BASE;
   S.mapaS=L.map('mapa').setView([c.lat,c.lng],13);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(S.mapaS);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(S.mapaS);
   if(S.gps) colocarMiMarcador();
   // Sucursales del supervisor
   const hoy=todayStr();
@@ -723,7 +724,7 @@ function colocarMiMarcador(){
 
 function initMapCorp(){
   S.mapaC=L.map('mapa-corp').setView([BASE.lat,BASE.lng],11);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(S.mapaC);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(S.mapaC);
   // Pins sucursales (subset)
   Object.values(SUCS).filter((_,i)=>i%4===0).forEach(s=>{
     const icon=L.divIcon({html:`<div style="background:#1A2540;width:7px;height:7px;border-radius:50%;border:1px solid #3a4060"></div>`,className:'',iconSize:[7,7]});
