@@ -387,7 +387,7 @@
   <div class="tab-content" id="tab-powerbi" style="padding:0;height:calc(100vh - 110px);">
     <iframe
       id="pbi-frame"
-      src=""
+      src="https://app.powerbi.com/view?r=eyJrIjoiNmZkMmQ3NjMtYTczZC00OTU2LTkzOWItZTM4NjlhMjk1MTYyIiwidCI6IjRiZjc3MjVlLTg4YTAtNGNhOC04NGVkLWY2ZGM0NzI0NWQ5NyJ9"
       style="width:100%;height:100%;border:none;display:block;"
       allowfullscreen>
     </iframe>
@@ -577,11 +577,7 @@ function switchTab(id,el){
   if(id==='tab-alerta2') renderAlertas(60,180,'lista-alerta2');
   if(id==='tab-alerta6') renderAlertas(180,365,'lista-alerta6');
   if(id==='tab-alerta12') renderAlertas(365,99999,'lista-alerta12');
-  if(id==='tab-powerbi'){
-    const fr=document.getElementById('pbi-frame');
-    if(!fr.src||fr.src==='about:blank'||fr.src==='')
-      fr.src='https://app.powerbi.com/links/wQDVGHHkPt?ctid=4bf7725e-88a0-4ca8-84ed-f6dc47245d97&pbi_source=linkShare&navContentPaneEnabled=0&filterPaneEnabled=0';
-  }
+
 }
 
 // =============================================
