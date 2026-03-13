@@ -261,10 +261,10 @@
         <label>Usuario</label>
         <select id="select-usuario">
           <option value="">Selecciona tu usuario...</option>
-          <option value="sup1">Carlos Mendoza — Zona Norte</option>
-          <option value="sup2">Ana García — Zona Sur</option>
-          <option value="sup3">Roberto López — Zona Este</option>
-          <option value="sup4">María Torres — Zona Oeste</option>
+<option value="elias">Elias — Zona Elias</option>
+<option value="vidal">Vidal — Zona Vidal</option>
+<option value="marizza">Marizza — Zona Marizza</option>
+<option value="ademilson">Ademilson — Zona Ademilson</option>
         </select>
       </div>
       <div class="form-group" id="select-admin-group" style="display:none">
@@ -417,21 +417,1756 @@
 // DATOS MAESTROS
 // =============================================
 const SUPS = {
-  sup1:{nombre:'Carlos Mendoza',zona:'Zona Norte',color:'#00C896',av:'CM',sucursales:Array.from({length:38},(_,i)=>i+1)},
-  sup2:{nombre:'Ana García',zona:'Zona Sur',color:'#3B82F6',av:'AG',sucursales:Array.from({length:37},(_,i)=>i+39)},
-  sup3:{nombre:'Roberto López',zona:'Zona Este',color:'#F59E0B',av:'RL',sucursales:Array.from({length:37},(_,i)=>i+76)},
-  sup4:{nombre:'María Torres',zona:'Zona Oeste',color:'#A855F7',av:'MT',sucursales:Array.from({length:38},(_,i)=>i+113)},
+  "elias": {
+    "nombre": "Elias",
+    "zona": "Zona Elias",
+    "color": "#00C896",
+    "av": "EL",
+    "sucursales": [
+      "140",
+      "120",
+      "110",
+      "111",
+      "109",
+      "036",
+      "163",
+      "047",
+      "119",
+      "172",
+      "171",
+      "118",
+      "103",
+      "141",
+      "035",
+      "070",
+      "030",
+      "014",
+      "095",
+      "115",
+      "153",
+      "038",
+      "002",
+      "008",
+      "154",
+      "082",
+      "048",
+      "170",
+      "092",
+      "134",
+      "144",
+      "001",
+      "011",
+      "126",
+      "130",
+      "112",
+      "124",
+      "108",
+      "121",
+      "106",
+      "024",
+      "022"
+    ]
+  },
+  "vidal": {
+    "nombre": "Vidal",
+    "zona": "Zona Vidal",
+    "color": "#3B82F6",
+    "av": "VI",
+    "sucursales": [
+      "025",
+      "138",
+      "017",
+      "045",
+      "151",
+      "081",
+      "156",
+      "059",
+      "098",
+      "083",
+      "065",
+      "072",
+      "125",
+      "136",
+      "073",
+      "152",
+      "086",
+      "155",
+      "165",
+      "142",
+      "145",
+      "032",
+      "085",
+      "031",
+      "020",
+      "051",
+      "128",
+      "129",
+      "143",
+      "026",
+      "027",
+      "137",
+      "102",
+      "049",
+      "096",
+      "080",
+      "093",
+      "021",
+      "091",
+      "161",
+      "160",
+      "162",
+      "094",
+      "078",
+      "077"
+    ]
+  },
+  "marizza": {
+    "nombre": "Marizza",
+    "zona": "Zona Marizza",
+    "color": "#F59E0B",
+    "av": "MA",
+    "sucursales": [
+      "016",
+      "168",
+      "167",
+      "117",
+      "099",
+      "132",
+      "057",
+      "148",
+      "149",
+      "053",
+      "087",
+      "101",
+      "150",
+      "050",
+      "166",
+      "157",
+      "061",
+      "058",
+      "113",
+      "068",
+      "169",
+      "090",
+      "122",
+      "023",
+      "069",
+      "034",
+      "146",
+      "063",
+      "037",
+      "042",
+      "088",
+      "135",
+      "164"
+    ]
+  },
+  "ademilson": {
+    "nombre": "Ademilson",
+    "zona": "Zona Ademilson",
+    "color": "#A855F7",
+    "av": "AD",
+    "sucursales": [
+      "123",
+      "159",
+      "114",
+      "055",
+      "052",
+      "004",
+      "147",
+      "133",
+      "100",
+      "097",
+      "054",
+      "089",
+      "075",
+      "116",
+      "131",
+      "139",
+      "029",
+      "074",
+      "066",
+      "033",
+      "127",
+      "158",
+      "003",
+      "010",
+      "079",
+      "067",
+      "046",
+      "071",
+      "104",
+      "012"
+    ]
+  }
 };
 
-const BASE={lat:-25.5,lng:-54.6};
-function rLat(){return BASE.lat+(Math.random()-.5)*.4;}
-function rLng(){return BASE.lng+(Math.random()-.5)*.4;}
-
+const BASE={lat:-25.3266,lng:-56.8887};
 const CIUDADES=['Ciudad del Este','Hernandarias','Minga Guazú','San Alberto','Naranjal','Mbaracayú','Itakyry','Los Cedrales','Mallorquín','Juan E. O\'Leary'];
 const SUCS={};
 for(let i=1;i<=150;i++){
   SUCS[i]={id:i,nombre:`Farmacia #${String(i).padStart(3,'0')}`,ciudad:CIUDADES[Math.floor((i-1)/15)%CIUDADES.length],lat:rLat(),lng:rLng()};
 }
+
+// =============================================
+// ESTADO GLOBAL
+// =============================================
+const S={
+  role:null,uid:null,
+  visitas:{}, // local cache desde firebase
+  gps:null,
+  mapaS:null, mapaC:null,
+  supMarkers:{}, myMarker:null,
+  fotosFiles:[],
+  gpsWatch:null,
+};
+
+// =============================================
+// FIREBASE READY
+// =============================================
+window.addEventListener('firebase-ready', ()=>{
+  document.getElementById('loading-overlay').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  setConnStatus(true);
+});
+
+function setConnStatus(ok){
+  document.getElementById('conn-dot').className='conn-dot '+(ok?'online':'offline');
+  document.getElementById('conn-text').textContent=ok?'Conectado':'Sin conexión';
+  document.getElementById('conn-text').style.color=ok?'var(--verde)':'var(--text3)';
+}
+
+// =============================================
+// LOGIN / LOGOUT
+// =============================================
+let currentRole='supervisor';
+function setRole(r){
+  currentRole=r;
+  document.querySelectorAll('.role-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&r==='supervisor')||(i===1&&r==='corporativo')));
+  document.getElementById('select-usuario-group').style.display=r==='supervisor'?'block':'none';
+  document.getElementById('select-admin-group').style.display=r==='corporativo'?'block':'none';
+}
+function login(){
+  if(currentRole==='supervisor'){
+    const v=document.getElementById('select-usuario').value;
+    if(!v){showToast('Selecciona tu usuario','error');return;}
+    S.role='supervisor';S.uid=v;
+  } else {
+    if(document.getElementById('input-admin').value!=='admin123'){showToast('Contraseña incorrecta','error');return;}
+    S.role='corporativo';S.uid='corp';
+  }
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  iniciarApp();
+}
+function logout(){
+  if(S.gpsWatch) navigator.geolocation.clearWatch(S.gpsWatch);
+  // Marcar supervisor como offline
+  if(S.role==='supervisor' && window._fb){
+    const {db,ref,update}=window._fb;
+    update(ref(db,`supervisores/${S.uid}`),{online:false,lastSeen:Date.now()});
+  }
+  S.role=null;S.uid=null;S.gps=null;S.mapaS=null;S.mapaC=null;S.supMarkers={};S.myMarker=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+
+// =============================================
+// INICIAR APP
+// =============================================
+function iniciarApp(){
+  const sup=SUPS[S.uid];
+  if(S.role==='supervisor'){
+    document.getElementById('user-avatar').textContent=sup.av;
+    document.getElementById('user-avatar').style.background=sup.color;
+    document.getElementById('user-name-display').textContent=sup.nombre;
+    document.getElementById('user-role-display').textContent=sup.zona;
+    buildNav([
+      {label:'🏠 Inicio',tab:'tab-inicio'},
+      {label:'📍 Mi mapa',tab:'tab-mapa'},
+      {label:'📋 Historial',tab:'tab-historial'},
+    ]);
+    suscribirVisitas();
+    iniciarGPS();
+  } else {
+    document.getElementById('user-avatar').textContent='🏢';
+    document.getElementById('user-avatar').style.background='var(--card2)';
+    document.getElementById('user-avatar').style.fontSize='18px';
+    document.getElementById('user-name-display').textContent='Corporativo';
+    document.getElementById('user-role-display').textContent='Vista general';
+    buildNav([
+      {label:'📊 Dashboard',tab:'tab-dashboard'},
+      {label:'👥 Supervisores',tab:'tab-supervisores'},
+      {label:'📋 Historial',tab:'tab-historial'},
+    ]);
+    suscribirVisitas();
+    suscribirUbicaciones();
+  }
+}
+
+// =============================================
+// NAVEGACIÓN
+// =============================================
+function buildNav(tabs){
+  document.getElementById('nav-tabs').innerHTML=tabs.map((t,i)=>
+    `<div class="nav-tab${i===0?' active':''}" onclick="switchTab('${t.tab}',this)">${t.label}</div>`
+  ).join('');
+}
+function switchTab(id,el){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  if(id==='tab-mapa') setTimeout(()=>{if(!S.mapaS)initMapSup();else S.mapaS.invalidateSize();},100);
+  if(id==='tab-dashboard') setTimeout(()=>{if(!S.mapaC)initMapCorp();else S.mapaC.invalidateSize();},100);
+  if(id==='tab-historial') renderHistorial();
+  if(id==='tab-supervisores') renderSupervisores();
+}
+
+// =============================================
+// FIREBASE — SUSCRIPCIÓN VISITAS
+// =============================================
+function suscribirVisitas(){
+  const {db,ref,onValue}=window._fb;
+  onValue(ref(db,'visitas'), snap=>{
+    S.visitas={};
+    snap.forEach(c=>{ S.visitas[c.key]=c.val(); });
+    if(S.role==='supervisor') renderSupView();
+    else renderCorpView();
+  });
+}
+
+function suscribirUbicaciones(){
+  const {db,ref,onValue}=window._fb;
+  onValue(ref(db,'supervisores'), snap=>{
+    const datos={};
+    snap.forEach(c=>{ datos[c.key]=c.val(); });
+    actualizarMarkersCorp(datos);
+  });
+}
+
+// =============================================
+// GPS EN TIEMPO REAL
+// =============================================
+function iniciarGPS(){
+  if(!navigator.geolocation){setGPS('error','GPS no disponible');return;}
+  setGPS('loading','Obteniendo ubicación...');
+  S.gpsWatch=navigator.geolocation.watchPosition(
+    pos=>{
+      S.gps={lat:pos.coords.latitude,lng:pos.coords.lng||pos.coords.longitude};
+      setGPS('ok',`${S.gps.lat.toFixed(5)}, ${S.gps.lat.toFixed(5)}`);
+      document.getElementById('btn-submit').disabled=false;
+      publicarUbicacion();
+    },
+    ()=>{
+      // Demo fallback
+      S.gps={lat:BASE.lat+(Math.random()-.5)*.05,lng:BASE.lng+(Math.random()-.5)*.05};
+      setGPS('ok',`${S.gps.lat.toFixed(5)}, ${S.gps.lng.toFixed(5)} (demo)`);
+      document.getElementById('btn-submit').disabled=false;
+      publicarUbicacion();
+    },
+    {enableHighAccuracy:true,maximumAge:30000,timeout:10000}
+  );
+}
+
+function publicarUbicacion(){
+  if(!S.gps||!window._fb||S.role!=='supervisor') return;
+  const {db,ref,set}=window._fb;
+  set(ref(db,`supervisores/${S.uid}`),{
+    ...S.gps, nombre:SUPS[S.uid].nombre, zona:SUPS[S.uid].zona,
+    color:SUPS[S.uid].color, av:SUPS[S.uid].av,
+    online:true, lastSeen:Date.now()
+  });
+}
+
+// =============================================
+// RENDER SUPERVISOR
+// =============================================
+function renderSupView(){
+  const hoy=todayStr();
+  const todas=Object.values(S.visitas);
+  const mias=todas.filter(v=>v.supId===S.uid);
+  const misHoy=mias.filter(v=>v.entrada&&v.entrada.startsWith(hoy));
+  document.getElementById('stat-hoy').textContent=misHoy.length;
+  document.getElementById('stat-mes').textContent=mias.filter(v=>v.entrada&&v.entrada.startsWith(hoy.slice(0,7))).length;
+  const visitadas=new Set(mias.map(v=>v.sucId));
+  document.getElementById('stat-pend').textContent=SUPS[S.uid].sucursales.filter(s=>!visitadas.has(String(s))).length;
+
+  const el=document.getElementById('visitas-hoy');
+  if(!misHoy.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🗓️</div><h3>Sin visitas hoy</h3><p>Toca "Registrar visita" para comenzar</p></div>`;
+    return;
+  }
+  el.innerHTML=misHoy.slice().sort((a,b)=>new Date(b.entrada)-new Date(a.entrada))
+    .map(v=>cardVisita(v)).join('');
+}
+
+// =============================================
+// RENDER CORPORATIVO
+// =============================================
+function renderCorpView(){
+  const hoy=todayStr();
+  const todas=Object.values(S.visitas);
+  const hoyV=todas.filter(v=>v.entrada&&v.entrada.startsWith(hoy));
+  document.getElementById('stat-corp-hoy').textContent=hoyV.length;
+  const semana=new Date();semana.setDate(semana.getDate()-7);
+  const visitadasSem=new Set(todas.filter(v=>v.entrada&&new Date(v.entrada)>semana).map(v=>v.sucId));
+  document.getElementById('stat-sin').textContent=150-visitadasSem.size;
+  // Últimas visitas
+  const el=document.getElementById('visitas-corp-list');
+  const ultimas=todas.slice().sort((a,b)=>new Date(b.entrada||0)-new Date(a.entrada||0)).slice(0,12);
+  el.innerHTML=ultimas.length?ultimas.map(v=>cardVisita(v)).join(''):`<div class="empty"><div class="empty-icon">📊</div><h3>Sin visitas registradas</h3></div>`;
+  renderSupervisores();
+}
+
+function renderSupervisores(){
+  const hoy=todayStr();
+  const todas=Object.values(S.visitas);
+  document.getElementById('supervisores-grid').innerHTML=Object.entries(SUPS).map(([id,sup])=>{
+    const mias=todas.filter(v=>v.supId===id);
+    const hoyV=mias.filter(v=>v.entrada&&v.entrada.startsWith(hoy)).length;
+    const mesV=mias.filter(v=>v.entrada&&v.entrada.startsWith(hoy.slice(0,7))).length;
+    const ultima=mias.sort((a,b)=>new Date(b.entrada||0)-new Date(a.entrada||0))[0];
+    const activa=mias.some(v=>v.estado==='en-curso');
+    return `<div class="supervisor-card">
+      <div class="sup-header">
+        <div class="sup-avatar" style="background:${sup.color}">${sup.av}</div>
+        <div>
+          <div class="sup-name">${sup.nombre}</div>
+          <div class="sup-zone">${sup.zona} · ${sup.sucursales.length} sucursales</div>
+          <div class="sup-online ${activa?'online':'offline'}">
+            <div style="width:6px;height:6px;border-radius:50%;background:currentColor"></div>
+            ${activa?'En visita activa':'Sin actividad ahora'}
+          </div>
+        </div>
+      </div>
+      <div class="sup-stats">
+        <div class="sup-stat"><div class="sup-stat-num" style="color:${sup.color}">${hoyV}</div><div class="sup-stat-label">Hoy</div></div>
+        <div class="sup-stat"><div class="sup-stat-num" style="color:${sup.color}">${mesV}</div><div class="sup-stat-label">Este mes</div></div>
+      </div>
+      <div class="sup-last">${ultima?`Última: ${SUCS[ultima.sucId]?.nombre||ultima.sucId} · ${fmtH(new Date(ultima.entrada))}`:'Sin visitas aún'}</div>
+    </div>`;
+  }).join('');
+}
+
+// =============================================
+// TARJETA VISITA
+// =============================================
+function cardVisita(v){
+  const suc=SUCS[v.sucId]||SUCS[parseInt(v.sucId)];
+  const sup=SUPS[v.supId];
+  const entrada=v.entrada?new Date(v.entrada):null;
+  const salida=v.salida?new Date(v.salida):null;
+  const dur=salida&&entrada?Math.round((salida-entrada)/60000):null;
+  const fbKey=Object.keys(S.visitas).find(k=>S.visitas[k]===v)||'';
+  return `<div class="visita-card">
+    <div class="visita-status ${v.estado||'completada'}"></div>
+    <div class="visita-info">
+      <div class="visita-farmacia">${suc?suc.nombre:v.sucId}</div>
+      <div class="visita-meta">${suc?suc.ciudad:''} · ${sup?sup.nombre:v.supId}</div>
+      <div class="visita-tags">
+        <span class="tag gris">${v.tipo||'rutina'}</span>
+        ${v.estado==='en-curso'?'<span class="tag verde">En curso</span>':'<span class="tag azul">Completada</span>'}
+        ${v.fotos>0?`<span class="tag amarillo">📷 ${v.fotos}</span>`:''}
+        ${dur?`<span class="tag gris">⏱ ${dur}min</span>`:''}
+      </div>
+      ${v.comentarios?`<div style="font-size:13px;color:var(--text2);margin-top:6px">"${v.comentarios.slice(0,80)}${v.comentarios.length>80?'...':''}"</div>`:''}
+      ${v.estado==='en-curso'&&S.role==='supervisor'&&v.supId===S.uid?`<button class="btn-fin-visita" onclick="finalizarVisita('${fbKey}')">✓ Finalizar visita</button>`:''}
+    </div>
+    <div class="visita-hora">
+      ${entrada?fmtH(entrada):'—'}<br>
+      ${salida?fmtH(salida):'<span style="color:var(--verde)">Activa</span>'}
+    </div>
+  </div>`;
+}
+
+// =============================================
+// MAPAS
+// =============================================
+function initMapSup(){
+  const c=S.gps||BASE;
+  S.mapaS=L.map('mapa').setView([c.lat,c.lng],13);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(S.mapaS);
+  if(S.gps) colocarMiMarcador();
+  // Sucursales del supervisor
+  const hoy=todayStr();
+  const visitadas=new Set(Object.values(S.visitas).filter(v=>v.supId===S.uid&&v.entrada&&v.entrada.startsWith(hoy)).map(v=>String(v.sucId)));
+  SUPS[S.uid].sucursales.slice(0,40).forEach(sid=>{
+    const s=SUCS[sid];
+    const ok=visitadas.has(String(sid));
+    const icon=L.divIcon({html:`<div style="background:${ok?'#00C896':'#5A6480'};width:9px;height:9px;border-radius:50%;border:2px solid ${ok?'#fff':'#2a3050'}"></div>`,className:'',iconSize:[9,9]});
+    L.marker([s.lat,s.lng],{icon}).addTo(S.mapaS).bindPopup(`<b>${s.nombre}</b><br>${s.ciudad}${ok?'<br>✅ Visitada hoy':''}`);
+  });
+}
+
+function colocarMiMarcador(){
+  if(!S.gps||!S.mapaS)return;
+  const sup=SUPS[S.uid];
+  const icon=L.divIcon({html:`<div style="background:${sup.color};color:#000;font-size:11px;font-weight:700;padding:5px 8px;border-radius:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.5)">${sup.av} Tú</div>`,className:'',iconSize:[60,28],iconAnchor:[30,14]});
+  if(S.myMarker) S.myMarker.setLatLng([S.gps.lat,S.gps.lng]);
+  else S.myMarker=L.marker([S.gps.lat,S.gps.lng],{icon}).addTo(S.mapaS);
+  S.mapaS.setView([S.gps.lat,S.gps.lng],14);
+}
+
+function initMapCorp(){
+  S.mapaC=L.map('mapa-corp').setView([BASE.lat,BASE.lng],11);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(S.mapaC);
+  // Pins sucursales (subset)
+  Object.values(SUCS).filter((_,i)=>i%4===0).forEach(s=>{
+    const icon=L.divIcon({html:`<div style="background:#1A2540;width:7px;height:7px;border-radius:50%;border:1px solid #3a4060"></div>`,className:'',iconSize:[7,7]});
+    L.marker([s.lat,s.lng],{icon}).addTo(S.mapaC).bindPopup(`<b>${s.nombre}</b><br>${s.ciudad}`);
+  });
+  // Suscribir ubicaciones de supervisores
+  const {db,ref,onValue}=window._fb;
+  onValue(ref(db,'supervisores'),snap=>{
+    const datos={};
+    snap.forEach(c=>{datos[c.key]=c.val();});
+    actualizarMarkersCorp(datos);
+  });
+}
+
+function actualizarMarkersCorp(datos){
+  if(!S.mapaC)return;
+  Object.entries(datos).forEach(([id,d])=>{
+    if(!d.lat||!d.lng)return;
+    const sup=SUPS[id];
+    if(!sup)return;
+    const online=d.online&&(Date.now()-d.lastSeen)<120000;
+    const icon=L.divIcon({
+      html:`<div style="background:${sup.color};color:#000;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.5);${online?'border:2px solid #fff':''}">${sup.av} ${sup.nombre.split(' ')[0]}</div>`,
+      className:'',iconSize:[110,28],iconAnchor:[55,14]
+    });
+    if(S.supMarkers[id]) S.supMarkers[id].setLatLng([d.lat,d.lng]).setIcon(icon);
+    else S.supMarkers[id]=L.marker([d.lat,d.lng],{icon}).addTo(S.mapaC)
+      .bindPopup(`<b>${sup.nombre}</b><br>${sup.zona}<br>${online?'🟢 En línea':'⚫ Sin actividad'}`);
+  });
+}
+
+// =============================================
+// MODAL REGISTRAR VISITA
+// =============================================
+function abrirModal(){
+  const sup=SUPS[S.uid];
+  document.getElementById('sel-suc').innerHTML='<option value="">Selecciona la sucursal...</option>'+
+    sup.sucursales.map(sid=>`<option value="${sid}">${SUCS[sid].nombre} — ${SUCS[sid].ciudad}</option>`).join('');
+  S.fotosFiles=[];
+  document.getElementById('foto-previews').innerHTML='';
+  document.getElementById('inp-comentarios').value='';
+  document.getElementById('modal-overlay').classList.add('open');
+  setGPS('loading','Obteniendo GPS...');
+  document.getElementById('btn-submit').disabled=true;
+  if(S.gps){
+    setGPS('ok',`${S.gps.lat.toFixed(5)}, ${S.gps.lng.toFixed(5)}`);
+    document.getElementById('btn-submit').disabled=false;
+  } else iniciarGPS();
+}
+function cerrarModal(){document.getElementById('modal-overlay').classList.remove('open');}
+function cerrarModalOut(e){if(e.target===document.getElementById('modal-overlay'))cerrarModal();}
+
+function prevFotos(e){
+  S.fotosFiles=Array.from(e.target.files);
+  const c=document.getElementById('foto-previews');
+  c.innerHTML='';
+  S.fotosFiles.forEach(f=>{
+    const img=document.createElement('img');
+    img.src=URL.createObjectURL(f);img.className='foto-preview';
+    c.appendChild(img);
+  });
+}
+
+async function guardarVisita(){
+  const sucId=document.getElementById('sel-suc').value;
+  if(!sucId){showToast('Selecciona una sucursal','error');return;}
+  if(!S.gps){showToast('Esperando GPS...','error');return;}
+  document.getElementById('btn-submit').disabled=true;
+  document.getElementById('btn-submit').textContent='Guardando...';
+
+  // Subir fotos a Storage
+  let fotosUrls=[];
+  if(S.fotosFiles.length>0 && window._fb){
+    const {storage,sRef,uploadBytes,getDownloadURL}=window._fb;
+    for(const f of S.fotosFiles){
+      try{
+        const r=sRef(storage,`visitas/${Date.now()}_${f.name}`);
+        const snap=await uploadBytes(r,f);
+        const url=await getDownloadURL(snap.ref);
+        fotosUrls.push(url);
+      }catch(e){console.warn('Error subiendo foto',e);}
+    }
+  }
+
+  const visita={
+    supId:S.uid,sucId,
+    tipo:document.getElementById('sel-tipo').value,
+    comentarios:document.getElementById('inp-comentarios').value.trim(),
+    fotos:fotosUrls.length,
+    fotosUrls,
+    lat:S.gps.lat,lng:S.gps.lng,
+    entrada:new Date().toISOString(),
+    salida:null,estado:'en-curso',
+  };
+
+  const {db,ref,push}=window._fb;
+  push(ref(db,'visitas'),visita)
+    .then(()=>{
+      cerrarModal();
+      showToast('✅ Visita registrada en tiempo real');
+    })
+    .catch(e=>{
+      console.error(e);
+      showToast('Error guardando en Firebase','error');
+    })
+    .finally(()=>{
+      document.getElementById('btn-submit').disabled=false;
+      document.getElementById('btn-submit').textContent='Guardar visita ✓';
+    });
+}
+
+function finalizarVisita(key){
+  if(!key||!window._fb)return;
+  const {db,ref,update}=window._fb;
+  update(ref(db,`visitas/${key}`),{salida:new Date().toISOString(),estado:'completada'})
+    .then(()=>showToast('✅ Visita finalizada'))
+    .catch(()=>showToast('Error al finalizar','error'));
+}
+
+// =============================================
+// HISTORIAL
+// =============================================
+function renderHistorial(){
+  const isCorp=S.role==='corporativo';
+  let visitas=Object.values(S.visitas);
+  if(!isCorp) visitas=visitas.filter(v=>v.supId===S.uid);
+  visitas.sort((a,b)=>new Date(b.entrada||0)-new Date(a.entrada||0));
+
+  const fw=document.getElementById('filtros-wrap');
+  if(isCorp){
+    fw.innerHTML=['Todos',...Object.values(SUPS).map(s=>s.nombre)].map((f,i)=>
+      `<button class="filtro-btn${i===0?' active':''}" onclick="filtrarH(this,'${i===0?'todos':f}')">${f}</button>`
+    ).join('');
+  } else {
+    fw.innerHTML=['Todos','rutina','seguimiento','auditoría','capacitación','urgencia'].map((f,i)=>
+      `<button class="filtro-btn${i===0?' active':''}" onclick="filtrarH(this,'${f}')">${f.charAt(0).toUpperCase()+f.slice(1)}</button>`
+    ).join('');
+  }
+  renderTabla(visitas);
+}
+function filtrarH(btn,f){
+  document.querySelectorAll('.filtro-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  let v=Object.values(S.visitas);
+  if(S.role==='supervisor') v=v.filter(x=>x.supId===S.uid);
+  if(f!=='todos'&&f!=='Todos'){
+    if(S.role==='corporativo'){
+      const id=Object.entries(SUPS).find(([,s])=>s.nombre===f)?.[0];
+      if(id) v=v.filter(x=>x.supId===id);
+    } else {
+      v=v.filter(x=>x.tipo===f);
+    }
+  }
+  renderTabla(v.sort((a,b)=>new Date(b.entrada||0)-new Date(a.entrada||0)));
+}
+function renderTabla(visitas){
+  const tb=document.getElementById('tabla-historial');
+  if(!visitas.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text2)">Sin visitas</td></tr>';return;}
+  tb.innerHTML=visitas.map(v=>{
+    const suc=SUCS[v.sucId]||SUCS[parseInt(v.sucId)];
+    const sup=SUPS[v.supId];
+    const e=v.entrada?new Date(v.entrada):null;
+    const s=v.salida?new Date(v.salida):null;
+    const dur=e&&s?Math.round((s-e)/60000)+' min':'—';
+    const col=v.estado==='en-curso'?'var(--verde)':'var(--azul)';
+    return `<tr>
+      <td>${suc?.nombre||v.sucId}<br><span style="font-size:11px;color:var(--text2)">${suc?.ciudad||''}</span></td>
+      <td><span style="color:${sup?.color||'var(--text)'}">${sup?.nombre||v.supId}</span></td>
+      <td>${e?fmtFH(e):'—'}</td>
+      <td>${s?fmtFH(s):'<span style="color:var(--verde)">Activa</span>'}</td>
+      <td>${dur}</td>
+      <td>${v.tipo||'—'}</td>
+      <td>${v.fotos>0?`📷 ${v.fotos}`:'—'}</td>
+      <td><span class="badge" style="background:${col}22;color:${col}">${v.estado||'?'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// =============================================
+// GPS INDICATOR
+// =============================================
+function setGPS(s,t){
+  const el=document.getElementById('gps-ind');
+  el.className='gps-indicator'+(s==='ok'?' ok':s==='loading'?' loading':' error');
+  document.getElementById('gps-txt').textContent=t;
+}
+
+// =============================================
+// UTILS
+// =============================================
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function fmtH(d){return d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});}
+function fmtFH(d){return d.toLocaleDateString('es',{day:'2-digit',month:'2-digit'})+' '+fmtH(d);}
+
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast'+(type?' '+type:'');
+  setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+document.getElementById('input-admin').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+</script>
+</body>
+</html>const SUCS = {
+  "140": {
+    "id": "140",
+    "nombre": "140 - AYOLAS 2",
+    "ciudad": "AYOLAS 2",
+    "lat": -27.3983080707,
+    "lng": -56.8617394466
+  },
+  "120": {
+    "id": "120",
+    "nombre": "120 - AYOLAS",
+    "ciudad": "AYOLAS",
+    "lat": -27.39202,
+    "lng": -56.84491
+  },
+  "110": {
+    "id": "110",
+    "nombre": "110 - ENCARNACION CENTRO 2",
+    "ciudad": "ENCARNACION CENTRO 2",
+    "lat": -27.3729480502,
+    "lng": -55.833764864
+  },
+  "111": {
+    "id": "111",
+    "nombre": "111 - ENCARNACION CAMBYRETA",
+    "ciudad": "ENCARNACION CAMBYRETA",
+    "lat": -27.34127,
+    "lng": -55.84862
+  },
+  "109": {
+    "id": "109",
+    "nombre": "109 - ENCARNACION CENTRO",
+    "ciudad": "ENCARNACION CENTRO",
+    "lat": -27.329574,
+    "lng": -55.866839
+  },
+  "036": {
+    "id": "036",
+    "nombre": "036 - ENCARNACION",
+    "ciudad": "ENCARNACION",
+    "lat": -27.327962,
+    "lng": -55.869902
+  },
+  "163": {
+    "id": "163",
+    "nombre": "163 - ENCARNACION 5",
+    "ciudad": "ENCARNACION 5",
+    "lat": -27.313061,
+    "lng": -55.878272
+  },
+  "047": {
+    "id": "047",
+    "nombre": "047 - CORONEL BOGADO",
+    "ciudad": "CORONEL BOGADO",
+    "lat": -27.158641,
+    "lng": -56.238983
+  },
+  "119": {
+    "id": "119",
+    "nombre": "119 - CORONEL BOGADO 2",
+    "ciudad": "CORONEL BOGADO 2",
+    "lat": -27.156007,
+    "lng": -56.23968
+  },
+  "172": {
+    "id": "172",
+    "nombre": "172 - HOHENAU",
+    "ciudad": "HOHENAU",
+    "lat": -27.0713617,
+    "lng": -55.6434166
+  },
+  "171": {
+    "id": "171",
+    "nombre": "171 - OBLIGADO",
+    "ciudad": "OBLIGADO",
+    "lat": -27.059103,
+    "lng": -55.631983
+  },
+  "118": {
+    "id": "118",
+    "nombre": "118 - SAN IGNACIO 2",
+    "ciudad": "SAN IGNACIO 2",
+    "lat": -26.8895,
+    "lng": -57.018944
+  },
+  "103": {
+    "id": "103",
+    "nombre": "103 - SAN IGNACIO",
+    "ciudad": "SAN IGNACIO",
+    "lat": -26.887278,
+    "lng": -57.024833
+  },
+  "025": {
+    "id": "025",
+    "nombre": "025 - SAN JUAN N",
+    "ciudad": "SAN JUAN N",
+    "lat": -26.112291,
+    "lng": -55.937504
+  },
+  "138": {
+    "id": "138",
+    "nombre": "138 - VILLARRICA 3",
+    "ciudad": "VILLARRICA 3",
+    "lat": -25.7809962,
+    "lng": -56.4487002635
+  },
+  "017": {
+    "id": "017",
+    "nombre": "017 - VILLARRICA",
+    "ciudad": "VILLARRICA",
+    "lat": -25.777282,
+    "lng": -56.44776
+  },
+  "045": {
+    "id": "045",
+    "nombre": "045 - VILLARRICA 2",
+    "ciudad": "VILLARRICA 2",
+    "lat": -25.77716,
+    "lng": -56.45025
+  },
+  "141": {
+    "id": "141",
+    "nombre": "141 - CARAPEGUA 2",
+    "ciudad": "CARAPEGUA 2",
+    "lat": -25.7675710442,
+    "lng": -57.2396529194
+  },
+  "035": {
+    "id": "035",
+    "nombre": "035 - CARAPEGUA",
+    "ciudad": "CARAPEGUA",
+    "lat": -25.761813,
+    "lng": -57.245595
+  },
+  "070": {
+    "id": "070",
+    "nombre": "070 - PARAGUARI 2",
+    "ciudad": "PARAGUARI 2",
+    "lat": -25.62589,
+    "lng": -57.15186
+  },
+  "030": {
+    "id": "030",
+    "nombre": "030 - PARAGUARI",
+    "ciudad": "PARAGUARI",
+    "lat": -25.6221539,
+    "lng": -57.1517489
+  },
+  "151": {
+    "id": "151",
+    "nombre": "151 - PRESIDENTE FRANCO 2",
+    "ciudad": "PRESIDENTE FRANCO 2",
+    "lat": -25.554212,
+    "lng": -54.628755
+  },
+  "081": {
+    "id": "081",
+    "nombre": "081 - PRESIDENTE FRANCO",
+    "ciudad": "PRESIDENTE FRANCO",
+    "lat": -25.549192,
+    "lng": -54.62989
+  },
+  "156": {
+    "id": "156",
+    "nombre": "156 - CDE SUPER CARRETERA",
+    "ciudad": "CDE SUPER CARRETERA",
+    "lat": -25.5384644,
+    "lng": -54.6329852
+  },
+  "059": {
+    "id": "059",
+    "nombre": "059 - CDE 2",
+    "ciudad": "CDE 2",
+    "lat": -25.535619,
+    "lng": -54.627419
+  },
+  "098": {
+    "id": "098",
+    "nombre": "098 - AREA 4",
+    "ciudad": "AREA 4",
+    "lat": -25.530664,
+    "lng": -54.627005
+  },
+  "083": {
+    "id": "083",
+    "nombre": "083 - AREA 2",
+    "ciudad": "AREA 2",
+    "lat": -25.52863,
+    "lng": -54.611115
+  },
+  "065": {
+    "id": "065",
+    "nombre": "065 - AREA 3",
+    "ciudad": "AREA 3",
+    "lat": -25.52749,
+    "lng": -54.620604
+  },
+  "072": {
+    "id": "072",
+    "nombre": "072 - CDE LAGO",
+    "ciudad": "CDE LAGO",
+    "lat": -25.521494,
+    "lng": -54.6222
+  },
+  "125": {
+    "id": "125",
+    "nombre": "125 - CDE AREA 1",
+    "ciudad": "CDE AREA 1",
+    "lat": -25.518518,
+    "lng": -54.641098
+  },
+  "014": {
+    "id": "014",
+    "nombre": "014 - ITA",
+    "ciudad": "ITA",
+    "lat": -25.511363,
+    "lng": -57.36195
+  },
+  "136": {
+    "id": "136",
+    "nombre": "136 - CDE CENTRO",
+    "ciudad": "CDE CENTRO",
+    "lat": -25.51102569,
+    "lng": -54.6150716025
+  },
+  "073": {
+    "id": "073",
+    "nombre": "073 - CDE KM 7",
+    "ciudad": "CDE KM 7",
+    "lat": -25.510409,
+    "lng": -54.671146
+  },
+  "152": {
+    "id": "152",
+    "nombre": "152 - CDE SAN JOSE",
+    "ciudad": "CDE SAN JOSE",
+    "lat": -25.5081667,
+    "lng": -54.6658889
+  },
+  "095": {
+    "id": "095",
+    "nombre": "095 - ITA 2",
+    "ciudad": "ITA 2",
+    "lat": -25.506278,
+    "lng": -57.357806
+  },
+  "086": {
+    "id": "086",
+    "nombre": "086 - CDE SAN JORGE",
+    "ciudad": "CDE SAN JORGE",
+    "lat": -25.49895,
+    "lng": -54.66638
+  },
+  "155": {
+    "id": "155",
+    "nombre": "155 - CORONEL OVIEDO 5",
+    "ciudad": "CORONEL OVIEDO 5",
+    "lat": -25.462459,
+    "lng": -56.448481
+  },
+  "165": {
+    "id": "165",
+    "nombre": "165 - CORONEL OVIEDO 4",
+    "ciudad": "CORONEL OVIEDO 4",
+    "lat": -25.462346,
+    "lng": -56.44836
+  },
+  "142": {
+    "id": "142",
+    "nombre": "142 - CNEL. OVIEDO 2",
+    "ciudad": "CNEL. OVIEDO 2",
+    "lat": -25.460761,
+    "lng": -56.45735
+  },
+  "145": {
+    "id": "145",
+    "nombre": "145 - CORONEL OVIEDO 3",
+    "ciudad": "CORONEL OVIEDO 3",
+    "lat": -25.4571542685,
+    "lng": -56.4357913769
+  },
+  "032": {
+    "id": "032",
+    "nombre": "032 - CNEL. OVIEDO",
+    "ciudad": "CNEL. OVIEDO",
+    "lat": -25.445303,
+    "lng": -56.438678
+  },
+  "016": {
+    "id": "016",
+    "nombre": "016 - YPACARAI",
+    "ciudad": "YPACARAI",
+    "lat": -25.401508,
+    "lng": -57.286718
+  },
+  "168": {
+    "id": "168",
+    "nombre": "168 - YPACARAI 2",
+    "ciudad": "YPACARAI 2",
+    "lat": -25.401104,
+    "lng": -57.289352
+  },
+  "167": {
+    "id": "167",
+    "nombre": "167 - SAN ANTONIO",
+    "ciudad": "SAN ANTONIO",
+    "lat": -25.401102,
+    "lng": -57.575562
+  },
+  "117": {
+    "id": "117",
+    "nombre": "117 - ACCESO SUR 3",
+    "ciudad": "ACCESO SUR 3",
+    "lat": -25.400585,
+    "lng": -57.543871
+  },
+  "099": {
+    "id": "099",
+    "nombre": "099 - ITAUGUA 3",
+    "ciudad": "ITAUGUA 3",
+    "lat": -25.394899,
+    "lng": -57.3501457
+  },
+  "132": {
+    "id": "132",
+    "nombre": "132 - NEMBY-SALINAS",
+    "ciudad": "NEMBY-SALINAS",
+    "lat": -25.393578,
+    "lng": -57.550696
+  },
+  "057": {
+    "id": "057",
+    "nombre": "057 - NEMBY",
+    "ciudad": "NEMBY",
+    "lat": -25.393242,
+    "lng": -57.547039
+  },
+  "148": {
+    "id": "148",
+    "nombre": "148 - ITAUGUA 4",
+    "ciudad": "ITAUGUA 4",
+    "lat": -25.3928159,
+    "lng": -57.3531695
+  },
+  "149": {
+    "id": "149",
+    "nombre": "149 - ITAUGUA 5",
+    "ciudad": "ITAUGUA 5",
+    "lat": -25.392218583,
+    "lng": -57.3550168578
+  },
+  "053": {
+    "id": "053",
+    "nombre": "053 - ITAUGUA",
+    "ciudad": "ITAUGUA",
+    "lat": -25.3916258,
+    "lng": -57.3558529
+  },
+  "087": {
+    "id": "087",
+    "nombre": "087 - ITAUGUA 2",
+    "ciudad": "ITAUGUA 2",
+    "lat": -25.390203,
+    "lng": -57.358655
+  },
+  "101": {
+    "id": "101",
+    "nombre": "101 - NEMBY 2",
+    "ciudad": "NEMBY 2",
+    "lat": -25.387726,
+    "lng": -57.524438
+  },
+  "150": {
+    "id": "150",
+    "nombre": "150 - ITAUGUA 6",
+    "ciudad": "ITAUGUA 6",
+    "lat": -25.3864581541,
+    "lng": -57.3509620283
+  },
+  "050": {
+    "id": "050",
+    "nombre": "050 - CAACUPE",
+    "ciudad": "CAACUPE",
+    "lat": -25.382498,
+    "lng": -57.135683
+  },
+  "166": {
+    "id": "166",
+    "nombre": "166 - SAN LORENZO REDUCTO",
+    "ciudad": "SAN LORENZO REDUCTO",
+    "lat": -25.3790833,
+    "lng": -57.4930833
+  },
+  "123": {
+    "id": "123",
+    "nombre": "123 - ACCESO SUR 2",
+    "ciudad": "ACCESO SUR 2",
+    "lat": -25.365617,
+    "lng": -57.563582
+  },
+  "157": {
+    "id": "157",
+    "nombre": "157 - MANUEL ORTIZ GUERRERO",
+    "ciudad": "MANUEL ORTIZ GUERRERO",
+    "lat": -25.362547,
+    "lng": -57.515471
+  },
+  "159": {
+    "id": "159",
+    "nombre": "159 - AVELINO",
+    "ciudad": "AVELINO",
+    "lat": -25.35715,
+    "lng": -57.551362
+  },
+  "061": {
+    "id": "061",
+    "nombre": "061 - SINALCO",
+    "ciudad": "SINALCO",
+    "lat": -25.355861,
+    "lng": -57.513883
+  },
+  "058": {
+    "id": "058",
+    "nombre": "058 - CAPIATA",
+    "ciudad": "CAPIATA",
+    "lat": -25.353141,
+    "lng": -57.443872
+  },
+  "113": {
+    "id": "113",
+    "nombre": "113 - SAN LORENZO TTE. BENITEZ",
+    "ciudad": "SAN LORENZO TTE. BENITEZ",
+    "lat": -25.3464,
+    "lng": -57.50501
+  },
+  "068": {
+    "id": "068",
+    "nombre": "068 - J. MIRANDA CUETO",
+    "ciudad": "J. MIRANDA CUETO",
+    "lat": -25.34355,
+    "lng": -57.507093
+  },
+  "114": {
+    "id": "114",
+    "nombre": "114 - CENTURY PLAZA",
+    "ciudad": "CENTURY PLAZA",
+    "lat": -25.343339,
+    "lng": -57.613549
+  },
+  "055": {
+    "id": "055",
+    "nombre": "055 - ACCESO SUR",
+    "ciudad": "ACCESO SUR",
+    "lat": -25.3432091192,
+    "lng": -57.582112886
+  },
+  "052": {
+    "id": "052",
+    "nombre": "052 - 11 DE SEPTIEMBRE",
+    "ciudad": "11 DE SEPTIEMBRE",
+    "lat": -25.342725,
+    "lng": -57.549654
+  },
+  "169": {
+    "id": "169",
+    "nombre": "169 - ZAVALA CUE",
+    "ciudad": "ZAVALA CUE",
+    "lat": -25.34099,
+    "lng": -57.565563
+  },
+  "004": {
+    "id": "004",
+    "nombre": "004 - LAMBARE",
+    "ciudad": "LAMBARE",
+    "lat": -25.339482,
+    "lng": -57.591795
+  },
+  "147": {
+    "id": "147",
+    "nombre": "147 - RCA. ARGENTINA 4",
+    "ciudad": "RCA. ARGENTINA 4",
+    "lat": -25.33337321,
+    "lng": -57.6073251865
+  },
+  "090": {
+    "id": "090",
+    "nombre": "090 - PITIANTUTA",
+    "ciudad": "PITIANTUTA",
+    "lat": -25.33331,
+    "lng": -57.5537
+  },
+  "133": {
+    "id": "133",
+    "nombre": "133 - INGAVI",
+    "ciudad": "INGAVI",
+    "lat": -25.330689,
+    "lng": -57.532479
+  },
+  "100": {
+    "id": "100",
+    "nombre": "100 - BRUNO GUGGIARI",
+    "ciudad": "BRUNO GUGGIARI",
+    "lat": -25.329524,
+    "lng": -57.618981
+  },
+  "097": {
+    "id": "097",
+    "nombre": "097 - RCA. ARGENTINA 2",
+    "ciudad": "RCA. ARGENTINA 2",
+    "lat": -25.32913,
+    "lng": -57.6001
+  },
+  "054": {
+    "id": "054",
+    "nombre": "054 - FELIX BOGADO",
+    "ciudad": "FELIX BOGADO",
+    "lat": -25.32795,
+    "lng": -57.627139
+  },
+  "089": {
+    "id": "089",
+    "nombre": "089 - MEDICOS DEL CHACO",
+    "ciudad": "MEDICOS DEL CHACO",
+    "lat": -25.32716,
+    "lng": -57.60388
+  },
+  "122": {
+    "id": "122",
+    "nombre": "122 - PASEO 1811",
+    "ciudad": "PASEO 1811",
+    "lat": -25.3270368748,
+    "lng": -57.5470022158
+  },
+  "075": {
+    "id": "075",
+    "nombre": "075 - GENERAL SANTOS",
+    "ciudad": "GENERAL SANTOS",
+    "lat": -25.325483,
+    "lng": -57.625369
+  },
+  "023": {
+    "id": "023",
+    "nombre": "023 - PINEDO SHOPPING",
+    "ciudad": "PINEDO SHOPPING",
+    "lat": -25.324049,
+    "lng": -57.520298
+  },
+  "069": {
+    "id": "069",
+    "nombre": "069 - FDO ZONA NORTE",
+    "ciudad": "FDO ZONA NORTE",
+    "lat": -25.322196,
+    "lng": -57.546814
+  },
+  "034": {
+    "id": "034",
+    "nombre": "034 - FDO DE LA MORA 1",
+    "ciudad": "FDO DE LA MORA 1",
+    "lat": -25.3210173,
+    "lng": -57.5616657
+  },
+  "116": {
+    "id": "116",
+    "nombre": "116 - RCA. ARGENTINA TERMINAL 3",
+    "ciudad": "RCA. ARGENTINA TERMINAL 3",
+    "lat": -25.3206073552,
+    "lng": -57.593124367
+  },
+  "131": {
+    "id": "131",
+    "nombre": "131 - LA VICTORIA",
+    "ciudad": "LA VICTORIA",
+    "lat": -25.3205371454,
+    "lng": -57.5775185434
+  },
+  "146": {
+    "id": "146",
+    "nombre": "146 - SAN LORENZO CALLEI",
+    "ciudad": "SAN LORENZO CALLEI",
+    "lat": -25.3198471269,
+    "lng": -57.4963441846
+  },
+  "139": {
+    "id": "139",
+    "nombre": "139 - VISTA ALEGRE",
+    "ciudad": "VISTA ALEGRE",
+    "lat": -25.3196093912,
+    "lng": -57.6056339
+  },
+  "029": {
+    "id": "029",
+    "nombre": "029 - R.ARGENTINA",
+    "ciudad": "R.ARGENTINA",
+    "lat": -25.315703,
+    "lng": -57.59001
+  },
+  "074": {
+    "id": "074",
+    "nombre": "074 - REPUBLICANO",
+    "ciudad": "REPUBLICANO",
+    "lat": -25.315533,
+    "lng": -57.630454
+  },
+  "066": {
+    "id": "066",
+    "nombre": "066 - SAN VICENTE",
+    "ciudad": "SAN VICENTE",
+    "lat": -25.31251,
+    "lng": -57.62544
+  },
+  "063": {
+    "id": "063",
+    "nombre": "063 - LAURELTY - SAN LORENZO",
+    "ciudad": "LAURELTY - SAN LORENZO",
+    "lat": -25.311402,
+    "lng": -57.506209
+  },
+  "115": {
+    "id": "115",
+    "nombre": "115 - FACUNDO MACHAIN",
+    "ciudad": "FACUNDO MACHAIN",
+    "lat": -25.3088496,
+    "lng": -57.5762318
+  },
+  "037": {
+    "id": "037",
+    "nombre": "037 - SAN BERNARDINO",
+    "ciudad": "SAN BERNARDINO",
+    "lat": -25.307831,
+    "lng": -57.298871
+  },
+  "033": {
+    "id": "033",
+    "nombre": "033 - EUSEBIO AYALA",
+    "ciudad": "EUSEBIO AYALA",
+    "lat": -25.3054146,
+    "lng": -57.6053333
+  },
+  "127": {
+    "id": "127",
+    "nombre": "127 - MARISCAL LOPEZ",
+    "ciudad": "MARISCAL LOPEZ",
+    "lat": -25.3031256,
+    "lng": -57.5614851
+  },
+  "042": {
+    "id": "042",
+    "nombre": "042 - SANTA TERESA",
+    "ciudad": "SANTA TERESA",
+    "lat": -25.301796,
+    "lng": -57.539947
+  },
+  "158": {
+    "id": "158",
+    "nombre": "158 - AVENIDA 5TA",
+    "ciudad": "AVENIDA 5TA",
+    "lat": -25.2983909,
+    "lng": -57.6435521
+  },
+  "088": {
+    "id": "088",
+    "nombre": "088 - SAN BERNARDINO 2",
+    "ciudad": "SAN BERNARDINO 2",
+    "lat": -25.29798,
+    "lng": -57.30371
+  },
+  "153": {
+    "id": "153",
+    "nombre": "153 - LUQUE AREGUA",
+    "ciudad": "LUQUE AREGUA",
+    "lat": -25.2968429,
+    "lng": -57.4213414
+  },
+  "038": {
+    "id": "038",
+    "nombre": "038 - VILLA MORRA",
+    "ciudad": "VILLA MORRA",
+    "lat": -25.296168,
+    "lng": -57.577733
+  },
+  "135": {
+    "id": "135",
+    "nombre": "135 - LUQUE LAGUNA GRANDE",
+    "ciudad": "LUQUE LAGUNA GRANDE",
+    "lat": -25.2958148,
+    "lng": -57.5359858
+  },
+  "003": {
+    "id": "003",
+    "nombre": "003 - COLON",
+    "ciudad": "COLON",
+    "lat": -25.295052,
+    "lng": -57.653188
+  },
+  "010": {
+    "id": "010",
+    "nombre": "010 - SANTA CLARA",
+    "ciudad": "SANTA CLARA",
+    "lat": -25.294893,
+    "lng": -57.632568
+  },
+  "164": {
+    "id": "164",
+    "nombre": "164 - SANTA TERESA 2",
+    "ciudad": "SANTA TERESA 2",
+    "lat": -25.294257,
+    "lng": -57.54938
+  },
+  "079": {
+    "id": "079",
+    "nombre": "079 - GASPAR R. DE FRANCIA",
+    "ciudad": "GASPAR R. DE FRANCIA",
+    "lat": -25.294184,
+    "lng": -57.633573
+  },
+  "067": {
+    "id": "067",
+    "nombre": "067 - ELIGIO AYALA",
+    "ciudad": "ELIGIO AYALA",
+    "lat": -25.289301,
+    "lng": -57.620486
+  },
+  "002": {
+    "id": "002",
+    "nombre": "002 - ESPANA",
+    "ciudad": "ESPANA",
+    "lat": -25.287603,
+    "lng": -57.598228
+  },
+  "008": {
+    "id": "008",
+    "nombre": "008 - SAN MARTIN",
+    "ciudad": "SAN MARTIN",
+    "lat": -25.287167,
+    "lng": -57.571981
+  },
+  "154": {
+    "id": "154",
+    "nombre": "154 - LA TORRE",
+    "ciudad": "LA TORRE",
+    "lat": -25.2859656531,
+    "lng": -57.5751357052
+  },
+  "082": {
+    "id": "082",
+    "nombre": "082 - LUQUE NANAWA",
+    "ciudad": "LUQUE NANAWA",
+    "lat": -25.285416,
+    "lng": -57.518503
+  },
+  "046": {
+    "id": "046",
+    "nombre": "046 - NUESTRA SRA.",
+    "ciudad": "NUESTRA SRA.",
+    "lat": -25.285349,
+    "lng": -57.636607
+  },
+  "048": {
+    "id": "048",
+    "nombre": "048 - LUQUE 2",
+    "ciudad": "LUQUE 2",
+    "lat": -25.282879,
+    "lng": -57.483572
+  },
+  "170": {
+    "id": "170",
+    "nombre": "170 - LAS RESIDENTAS",
+    "ciudad": "LAS RESIDENTAS",
+    "lat": -25.280331,
+    "lng": -57.538128
+  },
+  "092": {
+    "id": "092",
+    "nombre": "092 - LUQUE-LA PAZ",
+    "ciudad": "LUQUE-LA PAZ",
+    "lat": -25.27818,
+    "lng": -57.49954
+  },
+  "134": {
+    "id": "134",
+    "nombre": "134 - LUQUE MARAMBURE",
+    "ciudad": "LUQUE MARAMBURE",
+    "lat": -25.2756902,
+    "lng": -57.4535606
+  },
+  "144": {
+    "id": "144",
+    "nombre": "144 - SANTISIMA TRINIDAD",
+    "ciudad": "SANTISIMA TRINIDAD",
+    "lat": -25.275551,
+    "lng": -57.5544143
+  },
+  "071": {
+    "id": "071",
+    "nombre": "071 - VENEZUELA",
+    "ciudad": "VENEZUELA",
+    "lat": -25.27507,
+    "lng": -57.594076
+  },
+  "001": {
+    "id": "001",
+    "nombre": "001 - JULIO CORREA",
+    "ciudad": "JULIO CORREA",
+    "lat": -25.272039,
+    "lng": -57.565552
+  },
+  "011": {
+    "id": "011",
+    "nombre": "011 - LUQUE",
+    "ciudad": "LUQUE",
+    "lat": -25.271912,
+    "lng": -57.491143
+  },
+  "126": {
+    "id": "126",
+    "nombre": "126 - LUQUE VILLA ELENA",
+    "ciudad": "LUQUE VILLA ELENA",
+    "lat": -25.2696880483,
+    "lng": -57.5004221705
+  },
+  "130": {
+    "id": "130",
+    "nombre": "130 - LUQUE HUMAITA",
+    "ciudad": "LUQUE HUMAITA",
+    "lat": -25.2691041263,
+    "lng": -57.4855017641
+  },
+  "112": {
+    "id": "112",
+    "nombre": "112 - LUQUE BELLA VISTA 2",
+    "ciudad": "LUQUE BELLA VISTA 2",
+    "lat": -25.2674707959,
+    "lng": -57.4924040273
+  },
+  "104": {
+    "id": "104",
+    "nombre": "104 - ARTIGAS 2",
+    "ciudad": "ARTIGAS 2",
+    "lat": -25.25875,
+    "lng": -57.587056
+  },
+  "124": {
+    "id": "124",
+    "nombre": "124 - LUQUE BELLA VISTA",
+    "ciudad": "LUQUE BELLA VISTA",
+    "lat": -25.2579357421,
+    "lng": -57.4881233489
+  },
+  "012": {
+    "id": "012",
+    "nombre": "012 - ARTIGAS",
+    "ciudad": "ARTIGAS",
+    "lat": -25.256099,
+    "lng": -57.5843
+  },
+  "108": {
+    "id": "108",
+    "nombre": "108 - LUQUE JARDIN DE ORO",
+    "ciudad": "LUQUE JARDIN DE ORO",
+    "lat": -25.254367,
+    "lng": -57.507953
+  },
+  "121": {
+    "id": "121",
+    "nombre": "121 - LOMA PYTA",
+    "ciudad": "LOMA PYTA",
+    "lat": -25.2411908398,
+    "lng": -57.5433521557
+  },
+  "106": {
+    "id": "106",
+    "nombre": "106 - MARIANO ROQUE ALONSO 2",
+    "ciudad": "MARIANO ROQUE ALONSO 2",
+    "lat": -25.220856,
+    "lng": -57.532228
+  },
+  "024": {
+    "id": "024",
+    "nombre": "024 - MARIANO R. A",
+    "ciudad": "MARIANO R. A",
+    "lat": -25.212348,
+    "lng": -57.532696
+  },
+  "022": {
+    "id": "022",
+    "nombre": "022 - ABASTO NORTE",
+    "ciudad": "ABASTO NORTE",
+    "lat": -25.178034,
+    "lng": -57.48358
+  },
+  "085": {
+    "id": "085",
+    "nombre": "085 - SANTANI 4 MONTE ALTO",
+    "ciudad": "SANTANI 4 MONTE ALTO",
+    "lat": -24.6728,
+    "lng": -56.44243
+  },
+  "031": {
+    "id": "031",
+    "nombre": "031 - SANTANI 2",
+    "ciudad": "SANTANI 2",
+    "lat": -24.665317,
+    "lng": -56.455577
+  },
+  "020": {
+    "id": "020",
+    "nombre": "020 - SANTANI",
+    "ciudad": "SANTANI",
+    "lat": -24.662455,
+    "lng": -56.44354
+  },
+  "051": {
+    "id": "051",
+    "nombre": "051 - SANTANI 3",
+    "ciudad": "SANTANI 3",
+    "lat": -24.662267,
+    "lng": -56.441459
+  },
+  "128": {
+    "id": "128",
+    "nombre": "128 - YASY KANY",
+    "ciudad": "YASY KANY",
+    "lat": -24.533397,
+    "lng": -55.891008
+  },
+  "129": {
+    "id": "129",
+    "nombre": "129 - CURUGUATY 2",
+    "ciudad": "CURUGUATY 2",
+    "lat": -24.4835063378,
+    "lng": -55.6872872082
+  },
+  "143": {
+    "id": "143",
+    "nombre": "143 - CURUGUATY 3",
+    "ciudad": "CURUGUATY 3",
+    "lat": -24.472798,
+    "lng": -55.696127
+  },
+  "026": {
+    "id": "026",
+    "nombre": "026 - CURUGUATY",
+    "ciudad": "CURUGUATY",
+    "lat": -24.468379,
+    "lng": -55.694695
+  },
+  "027": {
+    "id": "027",
+    "nombre": "027 - KATUETE",
+    "ciudad": "KATUETE",
+    "lat": -24.250868,
+    "lng": -54.766692
+  },
+  "137": {
+    "id": "137",
+    "nombre": "137 - KATUETE 2",
+    "ciudad": "KATUETE 2",
+    "lat": -24.2459625124,
+    "lng": -54.7590122171
+  },
+  "102": {
+    "id": "102",
+    "nombre": "102 - CRUCE LIBERACION 3",
+    "ciudad": "CRUCE LIBERACION 3",
+    "lat": -24.199614,
+    "lng": -56.434742
+  },
+  "049": {
+    "id": "049",
+    "nombre": "049 - CRUCE LIBERACION",
+    "ciudad": "CRUCE LIBERACION",
+    "lat": -24.1941,
+    "lng": -56.43507
+  },
+  "096": {
+    "id": "096",
+    "nombre": "096 - CRUCE LIBERACION 2",
+    "ciudad": "CRUCE LIBERACION 2",
+    "lat": -24.191639,
+    "lng": -56.436295
+  },
+  "080": {
+    "id": "080",
+    "nombre": "080 - SANTA ROSA 2",
+    "ciudad": "SANTA ROSA 2",
+    "lat": -23.82818,
+    "lng": -56.51984
+  },
+  "093": {
+    "id": "093",
+    "nombre": "093 - SANTA ROSA 4",
+    "ciudad": "SANTA ROSA 4",
+    "lat": -23.82769,
+    "lng": -56.52088
+  },
+  "021": {
+    "id": "021",
+    "nombre": "021 - SANTA ROSA",
+    "ciudad": "SANTA ROSA",
+    "lat": -23.824413,
+    "lng": -56.518499
+  },
+  "091": {
+    "id": "091",
+    "nombre": "091 - SANTA ROSA 3",
+    "ciudad": "SANTA ROSA 3",
+    "lat": -23.81632,
+    "lng": -56.51187
+  },
+  "161": {
+    "id": "161",
+    "nombre": "161 - CONCEPCION",
+    "ciudad": "CONCEPCION",
+    "lat": -23.408458,
+    "lng": -57.436626
+  },
+  "160": {
+    "id": "160",
+    "nombre": "160 - CONCEPCION 2",
+    "ciudad": "CONCEPCION 2",
+    "lat": -23.406625,
+    "lng": -57.447916
+  },
+  "162": {
+    "id": "162",
+    "nombre": "162 - HORQUETA 2",
+    "ciudad": "HORQUETA 2",
+    "lat": -23.3443371,
+    "lng": -57.0422405
+  },
+  "094": {
+    "id": "094",
+    "nombre": "094 - HORQUETA",
+    "ciudad": "HORQUETA",
+    "lat": -23.342194,
+    "lng": -57.048917
+  },
+  "078": {
+    "id": "078",
+    "nombre": "078 - PJC CENTRO",
+    "ciudad": "PJC CENTRO",
+    "lat": -22.53765,
+    "lng": -55.73308
+  },
+  "077": {
+    "id": "077",
+    "nombre": "077 - PJC REGIONAL",
+    "ciudad": "PJC REGIONAL",
+    "lat": -22.535385,
+    "lng": -55.73985
+  }
+};
 
 // =============================================
 // ESTADO GLOBAL
