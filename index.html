@@ -368,7 +368,12 @@
 
   <!-- TAB HISTORIAL -->
   <div class="tab-content" id="tab-historial">
-    <div class="filtros" id="filtros-wrap"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div class="filtros" id="filtros-wrap" style="margin:0;"></div>
+      <button onclick="exportarExcel()" style="display:inline-flex;align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;">
+        📥 Exportar Excel
+      </button>
+    </div>
     <div class="tabla-wrap">
       <table>
         <thead>
@@ -1061,6 +1066,63 @@ function showToast(msg,type=''){
   t.textContent=msg;t.className='toast'+(type?' '+type:'');
   setTimeout(()=>t.classList.add('show'),10);
   setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+
+// =============================================
+// EXPORTAR EXCEL
+// =============================================
+function exportarExcel(){
+  const isCorp = S.role==='corporativo';
+  let visitas = Object.values(S.visitas);
+  if(!isCorp) visitas = visitas.filter(v=>v.supId===S.uid);
+  visitas.sort((a,b)=>new Date(b.entrada||0)-new Date(a.entrada||0));
+
+  // Encabezados
+  const rows = [['Sucursal','Ciudad','Supervisor','Zona','Fecha Entrada','Hora Entrada','Fecha Salida','Hora Salida','Duración (min)','Tipo','Fotos','Estado','Lat','Lng']];
+
+  visitas.forEach(v=>{
+    const suc = SUCS[v.sucId] || SUCS[parseInt(v.sucId)] || {};
+    const sup = SUPS[v.supId] || {};
+    const entrada = v.entrada ? new Date(v.entrada) : null;
+    const salida = v.salida ? new Date(v.salida) : null;
+    const dur = entrada && salida ? Math.round((salida-entrada)/60000) : '';
+    const fmtFecha = d => d ? d.toLocaleDateString('es') : '';
+    const fmtHora = d => d ? d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) : '';
+    rows.push([
+      suc.nombre || v.sucId,
+      suc.ciudad || '',
+      sup.nombre || v.supId,
+      sup.zona || '',
+      fmtFecha(entrada),
+      fmtHora(entrada),
+      fmtFecha(salida),
+      fmtHora(salida),
+      dur,
+      v.tipo || '',
+      v.fotos || 0,
+      v.estado || '',
+      v.lat || '',
+      v.lng || ''
+    ]);
+  });
+
+  // Convertir a CSV con BOM para que Excel reconozca tildes
+  const bom = '\uFEFF';
+  const csv = bom + rows.map(r=>r.map(c=>{
+    const val = String(c).replace(/"/g,'""');
+    return val.includes(',') || val.includes('\n') || val.includes('"') ? `"${val}"` : val;
+  }).join(',')).join('\n');
+
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const fecha = new Date().toLocaleDateString('es').replace(/\//g,'-');
+  a.href = url;
+  a.download = `FarmaTrack_Historial_${fecha}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ Excel descargado');
 }
 
 document.getElementById('input-admin').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
