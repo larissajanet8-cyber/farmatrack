@@ -348,6 +348,24 @@
     <div class="supervisores-grid" id="supervisores-grid"></div>
   </div>
 
+  <!-- TAB ALERTAS 2 MESES -->
+  <div class="tab-content" id="tab-alerta2">
+    <div class="section-header"><h3>&#9888;&#65039; Sucursales sin visita entre 2 y 6 meses</h3></div>
+    <div id="lista-alerta2"></div>
+  </div>
+
+  <!-- TAB ALERTAS 6 MESES - 1 AÑO -->
+  <div class="tab-content" id="tab-alerta6">
+    <div class="section-header"><h3>&#128308; Sucursales sin visita entre 6 meses y 1 año</h3></div>
+    <div id="lista-alerta6"></div>
+  </div>
+
+  <!-- TAB ALERTAS MAS DE 1 AÑO -->
+  <div class="tab-content" id="tab-alerta12">
+    <div class="section-header"><h3><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#A32D2D;margin-right:6px;vertical-align:middle;"></span>Sucursales sin visita hace más de 1 año</h3></div>
+    <div id="lista-alerta12"></div>
+  </div>
+
   <!-- TAB HISTORIAL -->
   <div class="tab-content" id="tab-historial">
     <div class="filtros" id="filtros-wrap"></div>
@@ -499,6 +517,9 @@ function iniciarApp(){
       {label:'🏠 Inicio',tab:'tab-inicio'},
       {label:'📍 Mi mapa',tab:'tab-mapa'},
       {label:'📋 Historial',tab:'tab-historial'},
+      {label:'⚠️ Sin visita 2m',tab:'tab-alerta2',alert:true,color:'amber'},
+      {label:'🔴 Sin visita 6m',tab:'tab-alerta6',alert:true,color:'red'},
+      {label:'● Más de 1 año',tab:'tab-alerta12',alert:true,color:'darkred'},
     ]);
     suscribirVisitas();
     iniciarGPS();
@@ -512,6 +533,9 @@ function iniciarApp(){
       {label:'📊 Dashboard',tab:'tab-dashboard'},
       {label:'👥 Supervisores',tab:'tab-supervisores'},
       {label:'📋 Historial',tab:'tab-historial'},
+      {label:'⚠️ Sin visita 2m',tab:'tab-alerta2',alert:true,color:'amber'},
+      {label:'🔴 Sin visita 6m',tab:'tab-alerta6',alert:true,color:'red'},
+      {label:'● Más de 1 año',tab:'tab-alerta12',alert:true,color:'darkred'},
     ]);
     suscribirVisitas();
     suscribirUbicaciones();
@@ -522,9 +546,13 @@ function iniciarApp(){
 // NAVEGACIÓN
 // =============================================
 function buildNav(tabs){
-  document.getElementById('nav-tabs').innerHTML=tabs.map((t,i)=>
-    `<div class="nav-tab${i===0?' active':''}" onclick="switchTab('${t.tab}',this)">${t.label}</div>`
-  ).join('');
+  document.getElementById('nav-tabs').innerHTML=tabs.map((t,i)=>{
+    let style='';
+    if(t.color==='amber') style='style="color:#B45309;background:#FAEEDA;"';
+    else if(t.color==='red') style='style="color:#A32D2D;background:#FCEBEB;"';
+    else if(t.color==='darkred') style='style="color:#501313;background:#F7C1C1;"';
+    return `<div class="nav-tab${i===0?' active':''}" ${style} onclick="switchTab('${t.tab}',this)" id="nav-${t.tab}">${t.label} <span id="badge-${t.tab}" style="display:none;background:currentColor;color:#fff;font-size:10px;border-radius:99px;padding:1px 6px;margin-left:3px;opacity:0.85;"></span></div>`;
+  }).join('');
 }
 function switchTab(id,el){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
@@ -535,6 +563,9 @@ function switchTab(id,el){
   if(id==='tab-dashboard') setTimeout(()=>{if(!S.mapaC)initMapCorp();else S.mapaC.invalidateSize();},100);
   if(id==='tab-historial') renderHistorial();
   if(id==='tab-supervisores') renderSupervisores();
+  if(id==='tab-alerta2') renderAlertas(60,180,'lista-alerta2');
+  if(id==='tab-alerta6') renderAlertas(180,365,'lista-alerta6');
+  if(id==='tab-alerta12') renderAlertas(365,99999,'lista-alerta12');
 }
 
 // =============================================
@@ -842,6 +873,111 @@ function finalizarVisita(key){
   update(ref(db,`visitas/${key}`),{salida:new Date().toISOString(),estado:'completada'})
     .then(()=>showToast('✅ Visita finalizada'))
     .catch(()=>showToast('Error al finalizar','error'));
+}
+
+// =============================================
+// ALERTAS SIN VISITA
+// =============================================
+function renderAlertas(minDias, maxDias, containerId){
+  const ahora = Date.now();
+  const isCorp = S.role==='corporativo';
+  // Para cada sucursal, buscar la última visita
+  const ultimaVisita = {};
+  Object.values(S.visitas).forEach(v=>{
+    if(!v.entrada) return;
+    const sid = String(v.sucId);
+    const supId = v.supId;
+    const key = isCorp ? sid : `${supId}_${sid}`;
+    const t = new Date(v.entrada).getTime();
+    if(!ultimaVisita[key] || t > ultimaVisita[key].t){
+      ultimaVisita[key] = {t, supId, sucId: sid};
+    }
+  });
+  // Filtrar sucursales por rango
+  let sucursalesARevisar = [];
+  if(isCorp){
+    Object.entries(SUCS).forEach(([sid, suc])=>{
+      const uv = ultimaVisita[sid];
+      const diasSinVisita = uv ? Math.floor((ahora - uv.t)/86400000) : 9999;
+      const supId = uv ? uv.supId : Object.entries(SUPS).find(([,s])=>s.sucursales.includes(sid))?.[0] || '?';
+      if(diasSinVisita >= minDias && diasSinVisita < maxDias){
+        sucursalesARevisar.push({suc, supId, diasSinVisita});
+      }
+    });
+  } else {
+    SUPS[S.uid].sucursales.forEach(sid=>{
+      const suc = SUCS[sid];
+      if(!suc) return;
+      const key = `${S.uid}_${sid}`;
+      const uv = ultimaVisita[key];
+      const diasSinVisita = uv ? Math.floor((ahora - uv.t)/86400000) : 9999;
+      if(diasSinVisita >= minDias && diasSinVisita < maxDias){
+        sucursalesARevisar.push({suc, supId: S.uid, diasSinVisita});
+      }
+    });
+  }
+  sucursalesARevisar.sort((a,b)=>b.diasSinVisita-a.diasSinVisita);
+  const el = document.getElementById(containerId);
+  if(!sucursalesARevisar.length){
+    el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:32px;margin-bottom:8px">✅</div><p>No hay sucursales en esta categoría</p></div>`;
+    return;
+  }
+  let color='#B45309', bg='#FAEEDA';
+  if(minDias>=365){color='#501313';bg='#F7C1C1';}
+  else if(minDias>=180){color='#A32D2D';bg='#FCEBEB';}
+  el.innerHTML=`<div style="background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;">
+      <span style="font-size:14px;font-weight:600;">${sucursalesARevisar.length} sucursales</span>
+    </div>
+    ${sucursalesARevisar.map(({suc,supId,diasSinVisita})=>{
+      const sup = SUPS[supId];
+      return `<div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);">
+        <div>
+          <p style="margin:0;font-size:14px;font-weight:500;">${suc.nombre}</p>
+          <p style="margin:0;font-size:12px;color:var(--text2);">${sup?sup.nombre:'?'} · ${suc.ciudad}</p>
+        </div>
+        <span style="background:${bg};color:${color};font-size:12px;padding:3px 10px;border-radius:99px;white-space:nowrap;">${diasSinVisita===9999?'Nunca visitada':'Hace '+diasSinVisita+' días'}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function actualizarBadgesAlertas(){
+  const ahora = Date.now();
+  const isCorp = S.role==='corporativo';
+  const ultimaVisita = {};
+  Object.values(S.visitas).forEach(v=>{
+    if(!v.entrada) return;
+    const sid = String(v.sucId);
+    const key = isCorp ? sid : `${v.supId}_${sid}`;
+    const t = new Date(v.entrada).getTime();
+    if(!ultimaVisita[key] || t > ultimaVisita[key]) ultimaVisita[key] = t;
+  });
+  const contar = (min, max) => {
+    let n=0;
+    if(isCorp){
+      Object.keys(SUCS).forEach(sid=>{
+        const t = ultimaVisita[sid];
+        const d = t ? Math.floor((ahora-t)/86400000) : 9999;
+        if(d>=min && d<max) n++;
+      });
+    } else {
+      SUPS[S.uid].sucursales.forEach(sid=>{
+        const key=`${S.uid}_${sid}`;
+        const t=ultimaVisita[key];
+        const d=t?Math.floor((ahora-t)/86400000):9999;
+        if(d>=min&&d<max) n++;
+      });
+    }
+    return n;
+  };
+  [['tab-alerta2',60,180],['tab-alerta6',180,365],['tab-alerta12',365,99999]].forEach(([tab,min,max])=>{
+    const badge = document.getElementById('badge-'+tab);
+    if(!badge) return;
+    const n = contar(min,max);
+    if(n>0){badge.textContent=n;badge.style.display='inline';}
+    else badge.style.display='none';
+  });
 }
 
 // =============================================
