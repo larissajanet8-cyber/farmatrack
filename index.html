@@ -723,6 +723,7 @@ function cardVisita(v){
       </div>
       ${v.comentarios?`<div style="font-size:13px;color:var(--text2);margin-top:6px">"${v.comentarios.slice(0,80)}${v.comentarios.length>80?'...':''}"</div>`:''}
       ${v.estado==='en-curso'&&S.role==='supervisor'&&v.supId===S.uid?`<button class="btn-fin-visita" onclick="finalizarVisita('${fbKey}')">✓ Finalizar visita</button>`:''}
+      ${S.role==='supervisor'&&v.supId===S.uid?`<button onclick="eliminarVisita('${fbKey}')" style="margin-top:6px;background:transparent;border:1px solid var(--rojo);color:var(--rojo);font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;">🗑 Eliminar visita</button>`:''}
     </div>
     <div class="visita-hora">
       ${entrada?fmtH(entrada):'—'}<br>
@@ -879,6 +880,15 @@ function finalizarVisita(key){
   update(ref(db,`visitas/${key}`),{salida:new Date().toISOString(),estado:'completada'})
     .then(()=>showToast('✅ Visita finalizada'))
     .catch(()=>showToast('Error al finalizar','error'));
+}
+
+function eliminarVisita(key){
+  if(!key||!window._fb)return;
+  if(!confirm('¿Seguro que querés eliminar esta visita? Esta acción no se puede deshacer.'))return;
+  const {db,ref,remove}=window._fb;
+  remove(ref(db,`visitas/${key}`))
+    .then(()=>showToast('🗑 Visita eliminada'))
+    .catch(()=>showToast('Error al eliminar','error'));
 }
 
 // =============================================
