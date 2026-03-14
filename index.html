@@ -597,9 +597,9 @@ function iniciarApp(){
 function buildNav(tabs){
   document.getElementById('nav-tabs').innerHTML=tabs.map((t,i)=>{
     let style='';
-    if(t.color==='amber') style='style="color:#B45309;background:#FAEEDA;"';
-    else if(t.color==='red') style='style="color:#A32D2D;background:#FCEBEB;"';
-    else if(t.color==='darkred') style='style="color:#501313;background:#F7C1C1;"';
+    if(t.color==='amber') style='style="color:#B45309;"';
+    else if(t.color==='red') style='style="color:#A32D2D;"';
+    else if(t.color==='darkred') style='style="color:#A32D2D;"';
     return `<div class="nav-tab${i===0?' active':''}" ${style} onclick="switchTab('${t.tab}',this)" id="nav-${t.tab}">${t.label} <span id="badge-${t.tab}" style="display:none;background:currentColor;color:#fff;font-size:10px;border-radius:99px;padding:1px 6px;margin-left:3px;opacity:0.85;"></span></div>`;
   }).join('');
 }
