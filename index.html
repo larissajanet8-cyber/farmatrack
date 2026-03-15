@@ -376,22 +376,9 @@
     <div class="supervisores-grid" id="supervisores-grid"></div>
   </div>
 
-  <!-- TAB ALERTAS 2 MESES -->
-  <div class="tab-content" id="tab-alerta2">
-    <div class="section-header"><h3>&#9888;&#65039; Sucursales sin visita entre 2 y 6 meses</h3></div>
-    <div id="lista-alerta2"></div>
-  </div>
-
-  <!-- TAB ALERTAS 6 MESES - 1 AÑO -->
-  <div class="tab-content" id="tab-alerta6">
-    <div class="section-header"><h3>&#128308; Sucursales sin visita entre 6 meses y 1 año</h3></div>
-    <div id="lista-alerta6"></div>
-  </div>
-
-  <!-- TAB ALERTAS MAS DE 1 AÑO -->
-  <div class="tab-content" id="tab-alerta12">
-    <div class="section-header"><h3><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#A32D2D;margin-right:6px;vertical-align:middle;"></span>Sucursales sin visita hace más de 1 año</h3></div>
-    <div id="lista-alerta12"></div>
+  <!-- TAB NO VISITADAS -->
+  <div class="tab-content" id="tab-novisitadas">
+    <div id="contenido-novisitadas"></div>
   </div>
 
   <!-- TAB PLAN DE VISITAS -->
@@ -621,9 +608,7 @@ function iniciarApp(){
       {label:'📅 Plan de visitas',tab:'tab-plan'},
       {label:'📍 Mi mapa',tab:'tab-mapa'},
       {label:'📋 Historial',tab:'tab-historial'},
-      {label:'⚠️ Sin visita 2m',tab:'tab-alerta2',alert:true,color:'amber'},
-      {label:'🔴 Sin visita 6m',tab:'tab-alerta6',alert:true,color:'red'},
-      {label:'● Más de 1 año',tab:'tab-alerta12',alert:true,color:'darkred'},
+      {label:'🚨 No visitadas',tab:'tab-novisitadas',color:'red'},
     ]);
     suscribirVisitas();
     iniciarGPS();
@@ -639,9 +624,7 @@ function iniciarApp(){
       {label:'👥 Supervisores',tab:'tab-supervisores'},
       {label:'📅 Plan de visitas',tab:'tab-plan'},
       {label:'📋 Historial',tab:'tab-historial'},
-      {label:'⚠️ Sin visita 2m',tab:'tab-alerta2',alert:true,color:'amber'},
-      {label:'🔴 Sin visita 6m',tab:'tab-alerta6',alert:true,color:'red'},
-      {label:'● Más de 1 año',tab:'tab-alerta12',alert:true,color:'darkred'},
+      {label:'🚨 No visitadas',tab:'tab-novisitadas',color:'red'},
     ]);
     suscribirVisitas();
     suscribirUbicaciones();
@@ -670,9 +653,7 @@ function switchTab(id,el){
   if(id==='tab-historial') renderHistorial();
   if(id==='tab-supervisores') renderSupervisores();
   if(id==='tab-plan') renderPlanVisitas();
-  if(id==='tab-alerta2') renderAlertas(60,180,'lista-alerta2');
-  if(id==='tab-alerta6') renderAlertas(180,365,'lista-alerta6');
-  if(id==='tab-alerta12') renderAlertas(365,99999,'lista-alerta12');
+  if(id==='tab-novisitadas') renderNoVisitadas();
 
 }
 
@@ -1677,6 +1658,89 @@ function cerrarModalPlan(){
 }
 function cerrarModalPlanOut(e){
   if(e.target===document.getElementById('modal-plan-overlay')) cerrarModalPlan();
+}
+
+
+// =============================================
+// NO VISITADAS — UNIFICADO
+// =============================================
+function renderNoVisitadas(){
+  const el = document.getElementById('contenido-novisitadas');
+  const categorias = [
+    {min:60, max:180, titulo:'⚠️ Sin visita entre 2 y 6 meses', color:'#B45309', bg:'#FAEEDA'},
+    {min:180, max:365, titulo:'🔴 Sin visita entre 6 meses y 1 año', color:'#A32D2D', bg:'#FCEBEB'},
+    {min:365, max:99999, titulo:'Sin visita hace más de 1 año', color:'#501313', bg:'#F7C1C1', punto:true},
+  ];
+
+  const ahora = Date.now();
+  const isCorp = S.role==='corporativo';
+  const ultimaVisita = {};
+  Object.values(S.visitas).forEach(v=>{
+    if(!v.entrada) return;
+    const sid = String(v.sucId);
+    const key = isCorp ? sid : `${v.supId}_${sid}`;
+    const t = new Date(v.entrada).getTime();
+    if(!ultimaVisita[key]||t>ultimaVisita[key].t) ultimaVisita[key]={t,supId:v.supId,sucId:sid};
+  });
+
+  let html = '';
+  let totalGeneral = 0;
+
+  categorias.forEach(cat => {
+    let lista = [];
+    if(isCorp){
+      Object.entries(SUCS).forEach(([sid,suc])=>{
+        const uv=ultimaVisita[sid];
+        const d=uv?Math.floor((ahora-uv.t)/86400000):9999;
+        const supId=uv?uv.supId:Object.entries(SUPS).find(([,s])=>s.sucursales.includes(sid))?.[0]||'?';
+        if(d>=cat.min&&d<cat.max) lista.push({suc,supId,d});
+      });
+    } else {
+      SUPS[S.uid].sucursales.forEach(sid=>{
+        const suc=SUCS[sid]; if(!suc) return;
+        const key=`${S.uid}_${sid}`;
+        const uv=ultimaVisita[key];
+        const d=uv?Math.floor((ahora-uv.t)/86400000):9999;
+        if(d>=cat.min&&d<cat.max) lista.push({suc,supId:S.uid,d});
+      });
+    }
+    lista.sort((a,b)=>b.d-a.d);
+    totalGeneral += lista.length;
+
+    const tituloIcon = cat.punto
+      ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${cat.color};margin-right:8px;vertical-align:middle;"></span>`
+      : '';
+
+    html += `<div style="margin-bottom:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <h3 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">${tituloIcon}${cat.titulo}</h3>
+        <span style="background:${cat.bg};color:${cat.color};font-size:12px;padding:3px 12px;border-radius:99px;font-weight:600;">${lista.length} sucursales</span>
+      </div>`;
+
+    if(!lista.length){
+      html += `<div style="text-align:center;padding:20px;color:var(--text2);background:var(--card);border-radius:12px;border:1px solid var(--border);font-size:13px;">✅ Ninguna sucursal en esta categoría</div>`;
+    } else {
+      html += `<div style="background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--border);">`;
+      lista.forEach(({suc,supId,d}) => {
+        const sup=SUPS[supId];
+        html += `<div style="padding:11px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);">
+          <div>
+            <p style="margin:0;font-size:14px;font-weight:500;">${suc.nombre}</p>
+            <p style="margin:0;font-size:12px;color:var(--text2);">${sup?sup.nombre:'?'} · ${suc.ciudad}</p>
+          </div>
+          <span style="background:${cat.bg};color:${cat.color};font-size:12px;padding:3px 10px;border-radius:99px;white-space:nowrap;">${d===9999?'Nunca visitada':'Hace '+d+' días'}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
+  });
+
+  if(totalGeneral === 0){
+    html = `<div class="empty"><div class="empty-icon">✅</div><h3>¡Todo al día!</h3><p>No hay sucursales sin visita en ninguna categoría</p></div>`;
+  }
+
+  el.innerHTML = html;
 }
 
 document.getElementById('input-admin').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
