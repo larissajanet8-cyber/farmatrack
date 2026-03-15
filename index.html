@@ -208,6 +208,32 @@
   /* TOAST */
   .btn-add-suc{position:fixed;bottom:28px;right:24px;z-index:400;background:var(--verde);color:#000;border:none;border-radius:50px;padding:13px 20px;font-size:14px;font-weight:700;cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,200,150,.35);transition:.2s;}
   .btn-add-suc:hover{opacity:.9;transform:scale(1.04);}
+  /* PLAN DE VISITAS */
+  .plan-semana-header{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .plan-semana-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;}
+  .plan-semana-fechas{font-size:12px;color:var(--text2);}
+  .plan-deadline{font-size:12px;padding:4px 12px;border-radius:99px;font-weight:600;}
+  .plan-deadline.open{background:rgba(0,200,150,.15);color:var(--verde);}
+  .plan-deadline.closed{background:rgba(255,75,110,.15);color:var(--rojo);}
+  .plan-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px;}
+  .plan-stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
+  .plan-stat-n{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;}
+  .plan-stat-l{font-size:11px;color:var(--text2);margin-top:3px;}
+  .cobertura-bar{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;margin-top:6px;}
+  .cobertura-fill{height:100%;border-radius:4px;background:var(--verde);transition:.5s;}
+  .plan-lista{display:flex;flex-direction:column;gap:8px;}
+  .plan-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;}
+  .plan-item-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+  .plan-item-icon.cumplida{background:rgba(0,200,150,.15);color:var(--verde);}
+  .plan-item-icon.pendiente{background:rgba(255,255,255,.05);color:var(--text3);}
+  .plan-item-icon.extra{background:rgba(59,130,246,.15);color:var(--azul);}
+  .plan-item-icon.incumplida{background:rgba(255,75,110,.15);color:var(--rojo);}
+  .plan-item-info{flex:1;}
+  .plan-item-nombre{font-size:14px;font-weight:500;}
+  .plan-item-meta{font-size:12px;color:var(--text2);}
+  .semanas-hist{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .semana-btn{padding:7px 14px;border-radius:99px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;}
+  .semana-btn.active{background:var(--verde);color:#000;border-color:var(--verde);}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--verde);color:#000;padding:12px 24px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;z-index:9999;transition:.35s cubic-bezier(.4,0,.2,1);box-shadow:0 8px 32px rgba(0,200,150,.4);white-space:nowrap;}
   .toast.show{transform:translateX(-50%) translateY(0);}
   .toast.error{background:var(--rojo);box-shadow:0 8px 32px rgba(255,75,110,.4);color:#fff;}
@@ -368,6 +394,12 @@
     <div id="lista-alerta12"></div>
   </div>
 
+  <!-- TAB PLAN DE VISITAS -->
+  <div class="tab-content" id="tab-plan">
+    <div id="plan-semanas-nav" class="semanas-hist"></div>
+    <div id="plan-contenido"></div>
+  </div>
+
   <!-- TAB HISTORIAL -->
   <div class="tab-content" id="tab-historial">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
@@ -476,6 +508,26 @@
   </div>
 </div>
 
+<!-- MODAL PLAN DE VISITAS -->
+<div class="modal-overlay" id="modal-plan-overlay" onclick="cerrarModalPlanOut(event)">
+  <div class="modal" style="max-height:85vh;">
+    <div class="modal-handle"></div>
+    <h2>📅 Planificar semana</h2>
+    <p id="modal-plan-semana-label">Seleccioná las sucursales que vas a visitar esta semana</p>
+    <div style="margin-bottom:12px;">
+      <input type="text" id="plan-buscar" placeholder="🔍 Buscar sucursal..." oninput="filtrarSucursalesPlan()" style="width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;outline:none;"/>
+    </div>
+    <div id="plan-lista-sucs" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+    <div style="margin-top:14px;padding:12px;background:var(--bg2);border-radius:10px;font-size:13px;color:var(--text2);">
+      <span id="plan-contador">0 sucursales seleccionadas</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModalPlan()">Cancelar</button>
+      <button class="btn-submit" id="btn-guardar-plan" onclick="guardarPlanVisitas()">Guardar plan ✓</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -563,6 +615,7 @@ function iniciarApp(){
     document.getElementById('user-role-display').textContent=sup.zona;
     buildNav([
       {label:'🏠 Inicio',tab:'tab-inicio'},
+      {label:'📅 Plan de visitas',tab:'tab-plan'},
       {label:'📍 Mi mapa',tab:'tab-mapa'},
       {label:'📋 Historial',tab:'tab-historial'},
       {label:'⚠️ Sin visita 2m',tab:'tab-alerta2',alert:true,color:'amber'},
@@ -581,6 +634,7 @@ function iniciarApp(){
     buildNav([
       {label:'📊 Dashboard',tab:'tab-dashboard'},
       {label:'👥 Supervisores',tab:'tab-supervisores'},
+      {label:'📅 Plan de visitas',tab:'tab-plan'},
       {label:'📋 Historial',tab:'tab-historial'},
       {label:'⚠️ Sin visita 2m',tab:'tab-alerta2',alert:true,color:'amber'},
       {label:'🔴 Sin visita 6m',tab:'tab-alerta6',alert:true,color:'red'},
@@ -612,6 +666,7 @@ function switchTab(id,el){
   if(id==='tab-dashboard') setTimeout(()=>{if(!S.mapaC)initMapCorp();else S.mapaC.invalidateSize();},100);
   if(id==='tab-historial') renderHistorial();
   if(id==='tab-supervisores') renderSupervisores();
+  if(id==='tab-plan') renderPlanVisitas();
   if(id==='tab-alerta2') renderAlertas(60,180,'lista-alerta2');
   if(id==='tab-alerta6') renderAlertas(180,365,'lista-alerta6');
   if(id==='tab-alerta12') renderAlertas(365,99999,'lista-alerta12');
@@ -1233,6 +1288,350 @@ function guardarNuevaSucursal(){
     cerrarModalSucursal();
     showToast(`✅ Sucursal ${codigo} agregada (sin conexión)`);
   }
+}
+
+
+// =============================================
+// PLAN DE VISITAS
+// =============================================
+
+// Obtener la semana actual (lunes a domingo)
+function getSemanaActual(){
+  const hoy = new Date();
+  const dia = hoy.getDay(); // 0=dom, 1=lun...
+  const lunes = new Date(hoy);
+  lunes.setDate(hoy.getDate() - (dia===0?6:dia-1));
+  lunes.setHours(0,0,0,0);
+  const domingo = new Date(lunes);
+  domingo.setDate(lunes.getDate()+6);
+  return {
+    lunes, domingo,
+    key: lunes.toISOString().slice(0,10),
+    label: `${fmtFecha(lunes)} — ${fmtFecha(domingo)}`
+  };
+}
+
+function fmtFecha(d){
+  return d.toLocaleDateString('es',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+// Verificar si el plan está abierto (hasta lunes 23:59)
+function planAbierto(semana){
+  const ahora = new Date();
+  const cierreplan = new Date(semana.lunes);
+  cierreplan.setHours(23,59,59,999);
+  return ahora <= cierreplan;
+}
+
+// Obtener semanas anteriores (últimas 8)
+function getUltimasSemanas(n=8){
+  const semanas = [];
+  for(let i=0; i<n; i++){
+    const hoy = new Date();
+    const dia = hoy.getDay();
+    const lunes = new Date(hoy);
+    lunes.setDate(hoy.getDate() - (dia===0?6:dia-1) - i*7);
+    lunes.setHours(0,0,0,0);
+    const domingo = new Date(lunes);
+    domingo.setDate(lunes.getDate()+6);
+    semanas.push({
+      lunes, domingo,
+      key: lunes.toISOString().slice(0,10),
+      label: i===0 ? 'Esta semana' : `${fmtFecha(lunes)} — ${fmtFecha(domingo)}`
+    });
+  }
+  return semanas;
+}
+
+let S_planSeleccionado = {}; // sucId -> true/false
+let S_semanaViendoPlan = null;
+
+function renderPlanVisitas(){
+  const semanas = getUltimasSemanas(8);
+  S_semanaViendoPlan = S_semanaViendoPlan || semanas[0].key;
+
+  // Nav de semanas
+  const nav = document.getElementById('plan-semanas-nav');
+  nav.innerHTML = semanas.map(s =>
+    `<button class="semana-btn${s.key===S_semanaViendoPlan?' active':''}" onclick="verSemanaPlan('${s.key}')">${s.label}</button>`
+  ).join('');
+
+  renderContenidoPlan(S_semanaViendoPlan);
+}
+
+function verSemanaPlan(key){
+  S_semanaViendoPlan = key;
+  document.querySelectorAll('.semana-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.semana-btn').forEach(b => {
+    if(b.onclick.toString().includes(key)) b.classList.add('active');
+  });
+  renderContenidoPlan(key);
+}
+
+function renderContenidoPlan(semanaKey){
+  const semanas = getUltimasSemanas(8);
+  const semana = semanas.find(s=>s.key===semanaKey) || semanas[0];
+  const isCorp = S.role==='corporativo';
+  const abierto = planAbierto(semana);
+  const contenido = document.getElementById('plan-contenido');
+
+  if(isCorp){
+    renderPlanCorp(semana, contenido);
+  } else {
+    renderPlanSup(semana, abierto, contenido);
+  }
+}
+
+function renderPlanSup(semana, abierto, contenido){
+  // Obtener plan guardado en Firebase
+  if(!window._fb) return;
+  const {db,ref,onValue} = window._fb;
+  onValue(ref(db, `planes/${S.uid}/${semana.key}`), snap => {
+    const planData = snap.val() || {};
+    const planSucs = planData.sucursales || [];
+
+    // Calcular cumplimiento
+    const hoyStr = new Date().toISOString().slice(0,10);
+    const visitasEnSemana = Object.values(S.visitas).filter(v => {
+      if(v.supId !== S.uid || !v.entrada) return false;
+      const d = new Date(v.entrada);
+      return d >= semana.lunes && d <= semana.domingo;
+    });
+    const visitadasIds = new Set(visitasEnSemana.map(v => String(v.sucId)));
+    const planIds = new Set(planSucs.map(String));
+
+    const cumplidas = [...planIds].filter(id => visitadasIds.has(id));
+    const pendientes = [...planIds].filter(id => !visitadasIds.has(id));
+    const extras = [...visitadasIds].filter(id => !planIds.has(id));
+    const total = planIds.size;
+    const pct = total > 0 ? Math.round((cumplidas.length/total)*100) : 0;
+
+    let html = `
+    <div class="plan-semana-header">
+      <div>
+        <div class="plan-semana-title">Semana del ${semana.label}</div>
+        <div class="plan-semana-fechas">${planSucs.length} sucursales planificadas</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="plan-deadline ${abierto?'open':'closed'}">${abierto?'✏️ Editable hasta hoy 23:59':'🔒 Plan cerrado'}</span>
+        ${abierto ? `<button onclick="abrirModalPlan('${semana.key}')" style="background:var(--verde);color:#000;border:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📝 ${planSucs.length?'Editar plan':'Crear plan'}</button>` : ''}
+      </div>
+    </div>`;
+
+    if(planSucs.length === 0 && abierto){
+      html += `<div class="empty"><div class="empty-icon">📋</div><h3>Sin plan cargado</h3><p>Cargá tu plan antes del lunes 23:59</p></div>`;
+    } else {
+      html += `<div class="plan-stats">
+        <div class="plan-stat">
+          <div class="plan-stat-n" style="color:var(--verde)">${pct}%</div>
+          <div class="plan-stat-l">Cobertura</div>
+          <div class="cobertura-bar"><div class="cobertura-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="plan-stat"><div class="plan-stat-n" style="color:var(--verde)">${cumplidas.length}</div><div class="plan-stat-l">✅ Cumplidas</div></div>
+        <div class="plan-stat"><div class="plan-stat-n" style="color:var(--rojo)">${pendientes.length}</div><div class="plan-stat-l">❌ Pendientes</div></div>
+        <div class="plan-stat"><div class="plan-stat-n" style="color:var(--azul)">${extras.length}</div><div class="plan-stat-l">➕ Extras</div></div>
+        <div class="plan-stat"><div class="plan-stat-n">${total}</div><div class="plan-stat-l">📋 Planificadas</div></div>
+      </div>`;
+
+      html += `<div class="plan-lista">`;
+
+      // Cumplidas
+      cumplidas.forEach(id => {
+        const suc = SUCS[id];
+        if(!suc) return;
+        const v = visitasEnSemana.find(x=>String(x.sucId)===id);
+        html += `<div class="plan-item">
+          <div class="plan-item-icon cumplida">✅</div>
+          <div class="plan-item-info">
+            <div class="plan-item-nombre">${suc.nombre}</div>
+            <div class="plan-item-meta">${suc.ciudad} · Visitada ${v?fmtFH(new Date(v.entrada)):''}</div>
+          </div>
+          <span class="tag verde">Cumplida</span>
+        </div>`;
+      });
+
+      // Extras
+      extras.forEach(id => {
+        const suc = SUCS[id];
+        if(!suc) return;
+        html += `<div class="plan-item">
+          <div class="plan-item-icon extra">➕</div>
+          <div class="plan-item-info">
+            <div class="plan-item-nombre">${suc.nombre}</div>
+            <div class="plan-item-meta">${suc.ciudad} · No estaba en el plan</div>
+          </div>
+          <span class="tag azul">Extra</span>
+        </div>`;
+      });
+
+      // Pendientes
+      pendientes.forEach(id => {
+        const suc = SUCS[id];
+        if(!suc) return;
+        html += `<div class="plan-item">
+          <div class="plan-item-icon ${abierto?'pendiente':'incumplida'}">${abierto?'⏳':'❌'}</div>
+          <div class="plan-item-info">
+            <div class="plan-item-nombre">${suc.nombre}</div>
+            <div class="plan-item-meta">${suc.ciudad}</div>
+          </div>
+          <span class="tag ${abierto?'gris':'rojo'}">${abierto?'Pendiente':'No cumplida'}</span>
+        </div>`;
+      });
+
+      html += `</div>`;
+    }
+
+    contenido.innerHTML = html;
+  }, {onlyOnce: true});
+}
+
+function renderPlanCorp(semana, contenido){
+  if(!window._fb) return;
+  const {db,ref,onValue} = window._fb;
+
+  // Cargar todos los planes de todos los supervisores
+  onValue(ref(db, `planes`), snap => {
+    const todosPlanes = snap.val() || {};
+    const visitasEnSemana = Object.values(S.visitas).filter(v => {
+      if(!v.entrada) return false;
+      const d = new Date(v.entrada);
+      return d >= semana.lunes && d <= semana.domingo;
+    });
+
+    let html = `<div class="plan-semana-header">
+      <div>
+        <div class="plan-semana-title">Semana del ${semana.label}</div>
+        <div class="plan-semana-fechas">Cobertura por supervisor</div>
+      </div>
+    </div>`;
+
+    // Resumen por supervisor
+    html += `<div style="display:flex;flex-direction:column;gap:12px;">`;
+    Object.entries(SUPS).forEach(([supId, sup]) => {
+      const planData = (todosPlanes[supId] && todosPlanes[supId][semana.key]) || {};
+      const planSucs = (planData.sucursales || []).map(String);
+      const visitasIds = new Set(visitasEnSemana.filter(v=>v.supId===supId).map(v=>String(v.sucId)));
+      const total = planSucs.length;
+      const cumplidas = planSucs.filter(id=>visitasIds.has(id)).length;
+      const extras = [...visitasIds].filter(id=>!planSucs.includes(id)).length;
+      const pendientes = total - cumplidas;
+      const pct = total > 0 ? Math.round((cumplidas/total)*100) : 0;
+
+      html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 20px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <div style="width:38px;height:38px;border-radius:50%;background:${sup.color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#000;">${sup.av}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:15px;">${sup.nombre}</div>
+            <div style="font-size:12px;color:var(--text2);">${sup.zona} · ${total} sucursales planificadas</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:${pct>=80?'var(--verde)':pct>=50?'var(--amarillo)':'var(--rojo)'};">${pct}%</div>
+            <div style="font-size:11px;color:var(--text2);">cobertura</div>
+          </div>
+        </div>
+        <div class="cobertura-bar"><div class="cobertura-fill" style="width:${pct}%;background:${pct>=80?'var(--verde)':pct>=50?'var(--amarillo)':'var(--rojo)'};"></div></div>
+        <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;">
+          <span style="color:var(--verde);">✅ ${cumplidas} cumplidas</span>
+          <span style="color:var(--rojo);">❌ ${pendientes} pendientes</span>
+          <span style="color:var(--azul);">➕ ${extras} extras</span>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+    contenido.innerHTML = html;
+  }, {onlyOnce: true});
+}
+
+// =============================================
+// MODAL CREAR/EDITAR PLAN
+// =============================================
+let S_planSemanaEditando = null;
+let S_planSeleccionadoActual = new Set();
+
+function abrirModalPlan(semanaKey){
+  S_planSemanaEditando = semanaKey;
+  const sup = SUPS[S.uid];
+
+  document.getElementById('modal-plan-semana-label').textContent =
+    `Seleccioná las sucursales para la semana del ${semanaKey}`;
+
+  // Cargar plan existente
+  if(window._fb){
+    const {db,ref,onValue} = window._fb;
+    onValue(ref(db, `planes/${S.uid}/${semanaKey}`), snap => {
+      const planData = snap.val() || {};
+      S_planSeleccionadoActual = new Set((planData.sucursales || []).map(String));
+      renderListaSucursalesPlan(sup.sucursales, '');
+    }, {onlyOnce: true});
+  } else {
+    S_planSeleccionadoActual = new Set();
+    renderListaSucursalesPlan(sup.sucursales, '');
+  }
+
+  document.getElementById('modal-plan-overlay').classList.add('open');
+}
+
+function renderListaSucursalesPlan(sucIds, filtro){
+  const lista = document.getElementById('plan-lista-sucs');
+  const filtrado = sucIds.filter(id => {
+    const s = SUCS[id];
+    if(!s) return false;
+    if(!filtro) return true;
+    return s.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
+           s.ciudad.toLowerCase().includes(filtro.toLowerCase());
+  });
+
+  lista.innerHTML = filtrado.map(id => {
+    const s = SUCS[id];
+    if(!s) return '';
+    const sel = S_planSeleccionadoActual.has(String(id));
+    return `<div onclick="togglePlanSuc('${id}')" style="padding:10px 14px;border-radius:10px;border:1px solid ${sel?'var(--verde)':'var(--border)'};background:${sel?'rgba(0,200,150,.08)':'transparent'};cursor:pointer;display:flex;align-items:center;gap:10px;transition:.2s;" id="plan-suc-item-${id}">
+      <div style="width:20px;height:20px;border-radius:5px;border:2px solid ${sel?'var(--verde)':'var(--text3)'};background:${sel?'var(--verde)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;color:#000;">${sel?'✓':''}</div>
+      <div>
+        <div style="font-size:13px;font-weight:500;">${s.nombre}</div>
+        <div style="font-size:11px;color:var(--text2);">${s.ciudad}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('plan-contador').textContent =
+    `${S_planSeleccionadoActual.size} sucursales seleccionadas`;
+}
+
+function togglePlanSuc(id){
+  const sid = String(id);
+  if(S_planSeleccionadoActual.has(sid)) S_planSeleccionadoActual.delete(sid);
+  else S_planSeleccionadoActual.add(sid);
+  const filtro = document.getElementById('plan-buscar').value;
+  renderListaSucursalesPlan(SUPS[S.uid].sucursales, filtro);
+}
+
+function filtrarSucursalesPlan(){
+  const filtro = document.getElementById('plan-buscar').value;
+  renderListaSucursalesPlan(SUPS[S.uid].sucursales, filtro);
+}
+
+function guardarPlanVisitas(){
+  if(!window._fb){showToast('Sin conexión','error');return;}
+  if(S_planSeleccionadoActual.size === 0){showToast('Seleccioná al menos una sucursal','error');return;}
+  const {db,ref,set} = window._fb;
+  const sucursales = [...S_planSeleccionadoActual];
+  set(ref(db, `planes/${S.uid}/${S_planSemanaEditando}`), {
+    sucursales,
+    creadoEn: new Date().toISOString(),
+    supId: S.uid
+  }).then(()=>{
+    cerrarModalPlan();
+    showToast(`✅ Plan guardado — ${sucursales.length} sucursales`);
+    renderPlanVisitas();
+  }).catch(()=>showToast('Error al guardar','error'));
+}
+
+function cerrarModalPlan(){
+  document.getElementById('modal-plan-overlay').classList.remove('open');
+}
+function cerrarModalPlanOut(e){
+  if(e.target===document.getElementById('modal-plan-overlay')) cerrarModalPlan();
 }
 
 document.getElementById('input-admin').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
