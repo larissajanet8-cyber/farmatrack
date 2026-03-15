@@ -231,9 +231,9 @@
   .plan-item-info{flex:1;}
   .plan-item-nombre{font-size:14px;font-weight:500;}
   .plan-item-meta{font-size:12px;color:var(--text2);}
-  .semanas-hist{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
-  .semana-btn{padding:7px 14px;border-radius:99px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;}
-  .semana-btn.active{background:var(--verde);color:#000;border-color:var(--verde);}
+  .plan-nav-select{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+  .plan-nav-select select{padding:9px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;transition:.2s;}
+  .plan-nav-select select:focus{border-color:var(--verde);}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--verde);color:#000;padding:12px 24px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;z-index:9999;transition:.35s cubic-bezier(.4,0,.2,1);box-shadow:0 8px 32px rgba(0,200,150,.4);white-space:nowrap;}
   .toast.show{transform:translateX(-50%) translateY(0);}
   .toast.error{background:var(--rojo);box-shadow:0 8px 32px rgba(255,75,110,.4);color:#fff;}
@@ -396,7 +396,10 @@
 
   <!-- TAB PLAN DE VISITAS -->
   <div class="tab-content" id="tab-plan">
-    <div id="plan-semanas-nav" class="semanas-hist"></div>
+    <div class="plan-nav-select" id="plan-semanas-nav">
+      <select id="plan-sel-mes" onchange="onCambioMesPlan()"></select>
+      <select id="plan-sel-semana" onchange="onCambioSemanaPlan()"></select>
+    </div>
     <div id="plan-contenido"></div>
   </div>
 
@@ -1352,25 +1355,58 @@ let S_planSeleccionado = {}; // sucId -> true/false
 let S_semanaViendoPlan = null;
 
 function renderPlanVisitas(){
-  const semanas = getUltimasSemanas(8);
+  const semanas = getUltimasSemanas(16);
   S_semanaViendoPlan = S_semanaViendoPlan || semanas[0].key;
-
-  // Nav de semanas
-  const nav = document.getElementById('plan-semanas-nav');
-  nav.innerHTML = semanas.map(s =>
-    `<button class="semana-btn${s.key===S_semanaViendoPlan?' active':''}" onclick="verSemanaPlan('${s.key}')">${s.label}</button>`
-  ).join('');
-
+  poblarSelectoresPlan(semanas);
   renderContenidoPlan(S_semanaViendoPlan);
 }
 
-function verSemanaPlan(key){
-  S_semanaViendoPlan = key;
-  document.querySelectorAll('.semana-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.semana-btn').forEach(b => {
-    if(b.onclick.toString().includes(key)) b.classList.add('active');
+function poblarSelectoresPlan(semanas){
+  // Agrupar semanas por mes
+  const meses = {};
+  semanas.forEach(s => {
+    const mesKey = s.lunes.toLocaleDateString('es',{year:'numeric',month:'long'});
+    if(!meses[mesKey]) meses[mesKey] = [];
+    meses[mesKey].push(s);
   });
-  renderContenidoPlan(key);
+
+  const selMes = document.getElementById('plan-sel-mes');
+  const mesActual = semanas.find(s=>s.key===S_semanaViendoPlan)?.lunes.toLocaleDateString('es',{year:'numeric',month:'long'}) || Object.keys(meses)[0];
+
+  selMes.innerHTML = Object.keys(meses).map(m =>
+    `<option value="${m}" ${m===mesActual?'selected':''}>${m.charAt(0).toUpperCase()+m.slice(1)}</option>`
+  ).join('');
+
+  poblarSemanasDelMes(meses[mesActual], semanas);
+}
+
+function poblarSemanasDelMes(semanasDelMes, todasSemanas){
+  const selSem = document.getElementById('plan-sel-semana');
+  selSem.innerHTML = semanasDelMes.map((s,i) =>
+    `<option value="${s.key}" ${s.key===S_semanaViendoPlan?'selected':''}>Semana ${i+1} (${s.lunes.toLocaleDateString('es',{day:'2-digit',month:'2-digit'})} — ${s.domingo.toLocaleDateString('es',{day:'2-digit',month:'2-digit'})})</option>`
+  ).join('');
+}
+
+function onCambioMesPlan(){
+  const semanas = getUltimasSemanas(16);
+  const mesKey = document.getElementById('plan-sel-mes').value;
+  const meses = {};
+  semanas.forEach(s => {
+    const mk = s.lunes.toLocaleDateString('es',{year:'numeric',month:'long'});
+    if(!meses[mk]) meses[mk] = [];
+    meses[mk].push(s);
+  });
+  const semanasDelMes = meses[mesKey] || [];
+  if(semanasDelMes.length > 0){
+    S_semanaViendoPlan = semanasDelMes[0].key;
+    poblarSemanasDelMes(semanasDelMes, semanas);
+    renderContenidoPlan(S_semanaViendoPlan);
+  }
+}
+
+function onCambioSemanaPlan(){
+  S_semanaViendoPlan = document.getElementById('plan-sel-semana').value;
+  renderContenidoPlan(S_semanaViendoPlan);
 }
 
 function renderContenidoPlan(semanaKey){
