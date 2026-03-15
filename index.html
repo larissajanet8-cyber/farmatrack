@@ -1321,15 +1321,18 @@ function fmtFecha(d){
 // Verificar si el plan está abierto (hasta lunes 23:59)
 function planAbierto(semana){
   const ahora = new Date();
-  // El plan está abierto durante toda la semana (lunes a lunes)
-  // Se puede cargar/editar desde el lunes de esa semana hasta el lunes SIGUIENTE a las 23:59
   const lunesSig = new Date(semana.lunes);
   lunesSig.setDate(lunesSig.getDate() + 7);
   lunesSig.setHours(23,59,59,999);
-  // Y no antes del inicio de la semana
   const inicio = new Date(semana.lunes);
   inicio.setHours(0,0,0,0);
   return ahora >= inicio && ahora <= lunesSig;
+}
+
+function fechaCierrePlan(semana){
+  const lunesSig = new Date(semana.lunes);
+  lunesSig.setDate(lunesSig.getDate() + 7);
+  return lunesSig.toLocaleDateString('es',{weekday:'long',day:'2-digit',month:'2-digit'});
 }
 
 // Obtener semanas anteriores (últimas 8)
