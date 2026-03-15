@@ -1458,7 +1458,7 @@ function renderPlanSup(semana, abierto, contenido){
         <div class="plan-semana-fechas">${planSucs.length} sucursales planificadas</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
-        <span class="plan-deadline ${abierto?'open':'closed'}">${abierto?'✏️ Editable hasta hoy 23:59':'🔒 Plan cerrado'}</span>
+        <span class="plan-deadline ${abierto?'open':'closed'}">${abierto?`✏️ Editable hasta el ${fechaCierrePlan(semana)} 23:59`:'🔒 Plan cerrado'}</span>
         ${abierto ? `<button onclick="abrirModalPlan('${semana.key}')" style="background:var(--verde);color:#000;border:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📝 ${planSucs.length?'Editar plan':'Crear plan'}</button>` : ''}
       </div>
     </div>`;
