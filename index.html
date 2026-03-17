@@ -2283,16 +2283,20 @@ function previewExcelVentas(e){
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:true});
       const norm = s => String(s).trim().toUpperCase().replace(/\s+/g,' ');
-      // Parsear número robusto: acepta 452.871.291,597 (es-PY) y 452871291.597 (en)
+      // Parsear número robusto: acepta múltiples formatos
       const parseNum = v => {
         if(typeof v === 'number') return Math.round(v);
-        const s = String(v).trim();
+        const s = String(v).trim().replace(/\s/g,'');
         if(!s) return 0;
-        // Formato español: puntos de miles, coma decimal → quitar puntos, cambiar coma por punto
-        const esFormat = /^-?[\d\.]+,[\d]+$/.test(s);
-        const cleaned = esFormat
-          ? s.replace(/\./g,'').replace(',','.')
-          : s.replace(/,/g,''); // formato inglés: quitar comas de miles
+        // Detectar formato: si tiene coma decimal (1.234,56) o punto decimal (1,234.56)
+        const hasComaDec  = /^-?[\d\.]+,[\d]+$/.test(s); // 452.871.291,597
+        const hasDotDec   = /^-?[\d,]+\.[\d]+$/.test(s);  // 452,871,291.597
+        const soloEntero  = /^-?[\d\.]+$/.test(s);         // 452.871.292 (solo miles, sin decimal)
+        let cleaned;
+        if(hasComaDec)   cleaned = s.replace(/\./g,'').replace(',','.');
+        else if(hasDotDec)  cleaned = s.replace(/,/g,'');
+        else if(soloEntero) cleaned = s.replace(/\./g,''); // quitar puntos de miles
+        else cleaned = s.replace(/[^0-9.-]/g,'');
         return Math.round(parseFloat(cleaned) || 0);
       };
       const parsed = rows.map(r=>{
@@ -2459,7 +2463,7 @@ function renderTablaVV(){
                    r.mes===mes && r.anio===anio &&
                    (!f.supervisor || r.supervisor===f.supervisor) &&
                    (!f.sucursal   || r.nombreSucursal===f.sucursal))
-      .reduce((s,r) => s + (r.valores|0), 0);
+      .reduce((s,r) => s + Math.round(r.valores||0), 0);
   }
 
   // Visitas de Firebase para un periodo
