@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FarmaTrack — Sistema de Visitas</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00C896">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FarmaTrack">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -71,29 +78,43 @@
   .btn-login:hover{background:var(--verde-dark);}
 
   /* APP */
-  #app{display:none;min-height:100vh;}
-  .topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-  .topbar-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;}
-  .topbar-logo span{color:var(--verde);}
-  .topbar-right{display:flex;align-items:center;gap:10px;}
-  .user-avatar{width:36px;height:36px;border-radius:10px;background:var(--verde);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#000;}
-  .user-info{line-height:1.2;}
-  .user-name{font-size:14px;font-weight:500;}
-  .user-role{font-size:11px;color:var(--verde);text-transform:uppercase;letter-spacing:.5px;}
-  .conn-badge{display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 8px;border-radius:6px;background:var(--bg3);}
+  #app{display:none;min-height:100vh;display:flex;}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:230px;background:var(--card);border-right:1px solid var(--border);z-index:100;display:flex;flex-direction:column;transition:.3s;}
+  .sidebar-brand{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+  .sidebar-brand-icon{width:34px;height:34px;background:var(--verde);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+  .sidebar-brand-name{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;}
+  .sidebar-brand-name span{color:var(--verde);}
+  .sidebar-user{padding:12px 20px;border-bottom:1px solid var(--border);}
+  .sidebar-user-name{font-size:13px;font-weight:500;color:var(--text);}
+  .sidebar-user-role{font-size:11px;color:var(--text2);margin-top:2px;}
+  .sidebar-nav{flex:1;padding:8px 0;overflow-y:auto;scrollbar-width:none;}
+  .sidebar-nav::-webkit-scrollbar{display:none;}
+  .nav-section{padding:8px 20px 4px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:6px;}
+  .nav-tab{display:flex;align-items:center;gap:9px;padding:10px 20px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-left:3px solid transparent;transition:.15s;white-space:nowrap;}
+  .nav-tab:hover{background:var(--bg3);color:var(--text);}
+  .nav-tab.active{background:var(--verde-glow);color:var(--verde);border-left-color:var(--verde);font-weight:600;}
+  .nav-tab.alerta{color:#A32D2D;}
+  .sidebar-footer{padding:14px 20px;border-top:1px solid var(--border);}
+  .sidebar-conn{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);margin-bottom:10px;}
   .conn-dot{width:6px;height:6px;border-radius:50%;}
   .conn-dot.online{background:var(--verde);animation:pulse 2s infinite;}
   .conn-dot.offline{background:var(--text3);}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .btn-logout{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;transition:.2s;}
+  .btn-logout{width:100%;padding:9px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:8px;font-size:12px;cursor:pointer;transition:.2s;font-family:'DM Sans',sans-serif;}
   .btn-logout:hover{border-color:var(--rojo);color:var(--rojo);}
-
-  .nav-tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
-  .nav-tab{padding:14px 20px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:.2s;white-space:nowrap;flex-shrink:0;}
-  .nav-tab.active{color:var(--verde);border-bottom-color:var(--verde);}
-
-  .tab-content{display:none;padding:20px;max-width:1200px;margin:0 auto;}
+  .hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;width:38px;height:38px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;font-size:18px;}
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;}
+  .main-content{margin-left:230px;flex:1;min-height:100vh;}
+  .tab-content{display:none;padding:24px;max-width:1200px;}
   .tab-content.active{display:block;}
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%);}
+    .sidebar.open{transform:translateX(0);}
+    .main-content{margin-left:0;}
+    .hamburger{display:flex;}
+    .sidebar-overlay.open{display:block;}
+    .tab-content{padding:14px;padding-top:60px;}
+  }
 
   /* STATS */
   .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;}
@@ -280,7 +301,7 @@
 
 <!-- LOADING -->
 <div id="loading-overlay">
-  <div class="logo-icon" style="width:64px;height:64px;background:var(--verde);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 0 40px rgba(0,200,150,.2)">💊</div>
+  <div class="logo-icon" style="width:64px;height:64px;background:var(--verde);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 0 40px rgba(0,200,150,.2)"></div>
   <div class="spinner"></div>
   <p>Conectando con Firebase...</p>
 </div>
@@ -289,7 +310,7 @@
 <div id="login-screen" style="display:none">
   <div class="login-wrap">
     <div class="logo-area">
-      <div class="logo-icon">💊</div>
+      <div class="logo-icon"></div>
       <div class="logo-title">Farma<span>Track</span></div>
       <div class="logo-sub">Sistema de visitas y geolocalización en tiempo real</div>
     </div>
@@ -297,8 +318,8 @@
       <h2>Iniciar sesión</h2>
       <p>Selecciona tu rol y usuario para continuar</p>
       <div class="role-tabs">
-        <div class="role-tab active" onclick="setRole('supervisor')">👤 Supervisor</div>
-        <div class="role-tab" onclick="setRole('corporativo')">🏢 Corporativo</div>
+        <div class="role-tab active" onclick="setRole('supervisor')"> Supervisor</div>
+        <div class="role-tab" onclick="setRole('corporativo')"> Corporativo</div>
       </div>
       <div class="form-group" id="select-usuario-group">
         <label>Usuario</label>
@@ -320,38 +341,44 @@
 </div>
 
 <!-- APP -->
+<button class="hamburger" id="hamburger" onclick="toggleSidebar()">&#9776;</button>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 <div id="app">
-  <div class="topbar">
-    <div class="topbar-logo">Farma<span>Track</span></div>
-    <div class="topbar-right">
-      <div class="conn-badge">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+      </div>
+      <div class="sidebar-brand-name">Farma<span>Track</span></div>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-user-name" id="user-name-display">-</div>
+      <div class="sidebar-user-role" id="user-role-display">-</div>
+    </div>
+    <nav class="sidebar-nav" id="nav-tabs"></nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-conn">
         <div class="conn-dot offline" id="conn-dot"></div>
         <span id="conn-text" style="color:var(--text3)">Conectando</span>
       </div>
-      <div class="user-avatar" id="user-avatar">?</div>
-      <div class="user-info">
-        <div class="user-name" id="user-name-display">-</div>
-        <div class="user-role" id="user-role-display">-</div>
-      </div>
-      <a href="https://app.powerbi.com/links/wQDVGHHkPt?ctid=4bf7725e-88a0-4ca8-84ed-f6dc47245d97&pbi_source=linkShare" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#F2C811;color:#000;font-weight:600;font-size:12px;padding:7px 12px;border-radius:8px;text-decoration:none;margin-right:6px;">📊 Power BI</a>
-      <button class="btn-logout" onclick="logout()">Salir</button>
+      <a href="https://app.powerbi.com/links/wQDVGHHkPt?ctid=4bf7725e-88a0-4ca8-84ed-f6dc47245d97&pbi_source=linkShare" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:6px;background:#F2C811;color:#000;font-weight:600;font-size:12px;padding:8px;border-radius:8px;text-decoration:none;margin-bottom:8px;">Power BI</a>
+      <button class="btn-logout" onclick="logout()">Cerrar sesion</button>
     </div>
   </div>
-  <div class="nav-tabs" id="nav-tabs"></div>
-
+  <div class="main-content">
   <!-- TAB INICIO (supervisor) -->
   <div class="tab-content active" id="tab-inicio">
     <div class="stats-grid">
-      <div class="stat-card verde"><div class="stat-icon">✅</div><div class="stat-num" id="stat-hoy">0</div><div class="stat-label">Visitas hoy</div></div>
-      <div class="stat-card azul"><div class="stat-icon">📍</div><div class="stat-num" id="stat-mes">0</div><div class="stat-label">Este mes</div></div>
-      <div class="stat-card amarillo"><div class="stat-icon">🏪</div><div class="stat-num" id="stat-pend">0</div><div class="stat-label">Por visitar</div></div>
+      <div class="stat-card verde"><div class="stat-num" id="stat-hoy">0</div><div class="stat-label">Visitas hoy</div></div>
+      <div class="stat-card azul"><div class="stat-num" id="stat-mes">0</div><div class="stat-label">Este mes</div></div>
+      <div class="stat-card amarillo"><div class="stat-num" id="stat-pend">0</div><div class="stat-label">Por visitar</div></div>
     </div>
     <div class="section-header">
       <h3>Mis visitas de hoy</h3>
       <button class="btn-primary" onclick="abrirModal()">＋ Registrar visita</button>
     </div>
     <div class="visitas-list" id="visitas-hoy">
-      <div class="empty"><div class="empty-icon">🗓️</div><h3>Sin visitas registradas</h3><p>Toca "Registrar visita" para comenzar tu jornada</p></div>
+      <div class="empty"><div class="empty-icon">️</div><h3>Sin visitas registradas</h3><p>Toca "Registrar visita" para comenzar tu jornada</p></div>
     </div>
   </div>
 
@@ -359,7 +386,7 @@
   <div class="tab-content" id="tab-mapa">
     <div class="map-section">
       <div class="map-header">
-        <h3>📍 Mi ubicación en tiempo real</h3>
+        <h3> Mi ubicación en tiempo real</h3>
         <div class="live-badge"><div class="live-dot"></div> EN VIVO</div>
       </div>
       <div id="mapa"></div>
@@ -369,14 +396,14 @@
   <!-- TAB DASHBOARD CORP -->
   <div class="tab-content" id="tab-dashboard">
     <div class="stats-grid">
-      <div class="stat-card verde"><div class="stat-icon">✅</div><div class="stat-num" id="stat-corp-hoy">0</div><div class="stat-label">Visitas hoy</div></div>
-      <div class="stat-card azul"><div class="stat-icon">👥</div><div class="stat-num">4</div><div class="stat-label">Supervisores</div></div>
-      <div class="stat-card amarillo"><div class="stat-icon">🏪</div><div class="stat-num">150</div><div class="stat-label">Sucursales</div></div>
-      <div class="stat-card rojo"><div class="stat-icon">⚠️</div><div class="stat-num" id="stat-sin">0</div><div class="stat-label">Sin visita semana</div></div>
+      <div class="stat-card verde"><div class="stat-num" id="stat-corp-hoy">0</div><div class="stat-label">Visitas hoy</div></div>
+      <div class="stat-card azul"><div class="stat-num">4</div><div class="stat-label">Supervisores</div></div>
+      <div class="stat-card amarillo"><div class="stat-num">150</div><div class="stat-label">Sucursales</div></div>
+      <div class="stat-card rojo"><div class="stat-num" id="stat-sin">0</div><div class="stat-label">Sin visita semana</div></div>
     </div>
     <div class="map-section">
       <div class="map-header">
-        <h3>🗺️ Supervisores en campo</h3>
+        <h3> Supervisores en campo</h3>
         <div class="live-badge"><div class="live-dot"></div> TIEMPO REAL</div>
       </div>
       <div id="mapa-corp"></div>
@@ -428,7 +455,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
       <div class="filtros" id="filtros-wrap" style="margin:0;"></div>
       <button onclick="exportarExcel()" style="display:inline-flex;align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;">
-        📥 Exportar Excel
+        Exportar Excel
       </button>
     </div>
     <div class="tabla-wrap">
@@ -442,6 +469,7 @@
         <tbody id="tabla-historial"></tbody>
       </table>
     </div>
+  </div>
   </div>
 </div>
 
@@ -473,7 +501,7 @@
       <label>Fotos de la sucursal</label>
       <div class="foto-upload" onclick="document.getElementById('inp-fotos').click()">
         <input type="file" id="inp-fotos" accept="image/*" multiple onchange="prevFotos(event)">
-        <div style="font-size:24px;margin-bottom:6px">📷</div>
+        <div style="font-size:24px;margin-bottom:6px"></div>
         <p style="font-size:13px;color:var(--text2)">Toca para agregar fotos</p>
       </div>
       <div class="foto-previews" id="foto-previews"></div>
@@ -481,12 +509,12 @@
     <div class="form-group">
       <label>Ubicación GPS</label>
       <div class="gps-indicator loading" id="gps-ind">
-        <span>📡</span><span id="gps-txt">Obteniendo ubicación...</span>
+        <span></span><span id="gps-txt">Obteniendo ubicación...</span>
       </div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn-submit" id="btn-submit" onclick="guardarVisita()" disabled>Guardar visita ✓</button>
+      <button class="btn-submit" id="btn-submit" onclick="guardarVisita()" disabled>Guardar visita </button>
     </div>
   </div>
 </div>
@@ -526,7 +554,7 @@
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="cerrarModalSucursal()">Cancelar</button>
-      <button class="btn-submit" onclick="guardarNuevaSucursal()">Guardar sucursal ✓</button>
+      <button class="btn-submit" onclick="guardarNuevaSucursal()">Guardar sucursal </button>
     </div>
   </div>
 </div>
@@ -535,10 +563,10 @@
 <div class="modal-overlay" id="modal-plan-overlay" onclick="cerrarModalPlanOut(event)">
   <div class="modal" style="max-height:85vh;">
     <div class="modal-handle"></div>
-    <h2>📅 Planificar semana</h2>
+    <h2> Planificar semana</h2>
     <p id="modal-plan-semana-label">Seleccioná las sucursales que vas a visitar esta semana</p>
     <div style="margin-bottom:12px;">
-      <input type="text" id="plan-buscar" placeholder="🔍 Buscar sucursal..." oninput="filtrarSucursalesPlan()" style="width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;outline:none;"/>
+      <input type="text" id="plan-buscar" placeholder=" Buscar sucursal..." oninput="filtrarSucursalesPlan()" style="width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;outline:none;"/>
     </div>
     <div id="plan-lista-sucs" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
     <div style="margin-top:14px;padding:12px;background:var(--bg2);border-radius:10px;font-size:13px;color:var(--text2);">
@@ -546,7 +574,7 @@
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="cerrarModalPlan()">Cancelar</button>
-      <button class="btn-submit" id="btn-guardar-plan" onclick="guardarPlanVisitas()">Guardar plan ✓</button>
+      <button class="btn-submit" id="btn-guardar-plan" onclick="guardarPlanVisitas()">Guardar plan </button>
     </div>
   </div>
 </div>
@@ -637,29 +665,33 @@ function iniciarApp(){
     document.getElementById('user-name-display').textContent=sup.nombre;
     document.getElementById('user-role-display').textContent=sup.zona;
     buildNav([
-      {label:'🏠 Inicio',tab:'tab-inicio'},
-      {label:'📊 Gestión',tab:'tab-gestion'},
-      {label:'📅 Plan de visitas',tab:'tab-plan'},
-      {label:'📍 Mi mapa',tab:'tab-mapa'},
-      {label:'📋 Historial',tab:'tab-historial'},
-      {label:'🚨 No visitadas',tab:'tab-novisitadas',color:'red'},
+      {sec:'Principal'},
+      {label:'Inicio',tab:'tab-inicio'},
+      {label:'Mi mapa',tab:'tab-mapa'},
+      {sec:'Actividad'},
+      {label:'Gestion',tab:'tab-gestion'},
+      {label:'Plan de visitas',tab:'tab-plan'},
+      {label:'Historial',tab:'tab-historial'},
+      {label:'Sin visita',tab:'tab-novisitadas',color:'red'},
     ]);
     suscribirVisitas();
     iniciarGPS();
   } else {
-    document.getElementById('user-avatar').textContent='🏢';
+    document.getElementById('user-avatar').textContent='';
     document.getElementById('user-avatar').style.background='var(--card2)';
     document.getElementById('user-avatar').style.fontSize='18px';
     document.getElementById('user-name-display').textContent='Corporativo';
     document.getElementById('user-role-display').textContent='Vista general';
     document.getElementById('btn-add-suc').style.display='flex';
     buildNav([
-      {label:'📊 Dashboard',tab:'tab-dashboard'},
-      {label:'👥 Supervisores',tab:'tab-supervisores'},
-      {label:'📊 Gestión',tab:'tab-gestion'},
-      {label:'📅 Plan de visitas',tab:'tab-plan'},
-      {label:'📋 Historial',tab:'tab-historial'},
-      {label:'🚨 No visitadas',tab:'tab-novisitadas',color:'red'},
+      {sec:'Principal'},
+      {label:'Dashboard',tab:'tab-dashboard'},
+      {label:'Supervisores',tab:'tab-supervisores'},
+      {sec:'Actividad'},
+      {label:'Gestion',tab:'tab-gestion'},
+      {label:'Plan de visitas',tab:'tab-plan'},
+      {label:'Historial',tab:'tab-historial'},
+      {label:'Sin visita',tab:'tab-novisitadas',color:'red'},
     ]);
     suscribirVisitas();
     suscribirUbicaciones();
@@ -764,7 +796,7 @@ function renderSupView(){
 
   const el=document.getElementById('visitas-hoy');
   if(!misHoy.length){
-    el.innerHTML=`<div class="empty"><div class="empty-icon">🗓️</div><h3>Sin visitas hoy</h3><p>Toca "Registrar visita" para comenzar</p></div>`;
+    el.innerHTML=`<div class="empty"><div class="empty-icon">️</div><h3>Sin visitas hoy</h3><p>Toca "Registrar visita" para comenzar</p></div>`;
     return;
   }
   el.innerHTML=misHoy.slice().sort((a,b)=>new Date(b.entrada)-new Date(a.entrada))
@@ -785,7 +817,7 @@ function renderCorpView(){
   // Últimas visitas
   const el=document.getElementById('visitas-corp-list');
   const ultimas=todas.slice().sort((a,b)=>new Date(b.entrada||0)-new Date(a.entrada||0)).slice(0,12);
-  el.innerHTML=ultimas.length?ultimas.map(v=>cardVisita(v)).join(''):`<div class="empty"><div class="empty-icon">📊</div><h3>Sin visitas registradas</h3></div>`;
+  el.innerHTML=ultimas.length?ultimas.map(v=>cardVisita(v)).join(''):`<div class="empty"><div class="empty-icon"></div><h3>Sin visitas registradas</h3></div>`;
   renderSupervisores();
 }
 
@@ -837,12 +869,12 @@ function cardVisita(v){
       <div class="visita-tags">
         <span class="tag gris">${v.tipo||'rutina'}</span>
         ${v.estado==='en-curso'?'<span class="tag verde">En curso</span>':'<span class="tag azul">Completada</span>'}
-        ${v.fotos>0?`<span class="tag amarillo">📷 ${v.fotos}</span>`:''}
+        ${v.fotos>0?`<span class="tag amarillo"> ${v.fotos}</span>`:''}
         ${dur?`<span class="tag gris">⏱ ${dur}min</span>`:''}
       </div>
       ${v.comentarios?`<div style="font-size:13px;color:var(--text2);margin-top:6px">"${v.comentarios.slice(0,80)}${v.comentarios.length>80?'...':''}"</div>`:''}
-      ${v.estado==='en-curso'&&S.role==='supervisor'&&v.supId===S.uid?`<button class="btn-fin-visita" onclick="finalizarVisita('${fbKey}')">✓ Finalizar visita</button>`:''}
-      ${S.role==='supervisor'&&v.supId===S.uid?`<button onclick="eliminarVisita('${fbKey}')" style="margin-top:6px;background:transparent;border:1px solid var(--rojo);color:var(--rojo);font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;">🗑 Eliminar visita</button>`:''}
+      ${v.estado==='en-curso'&&S.role==='supervisor'&&v.supId===S.uid?`<button class="btn-fin-visita" onclick="finalizarVisita('${fbKey}')"> Finalizar visita</button>`:''}
+      ${S.role==='supervisor'&&v.supId===S.uid?`<button onclick="eliminarVisita('${fbKey}')" style="margin-top:6px;background:transparent;border:1px solid var(--rojo);color:var(--rojo);font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;">Eliminar visita</button>`:''}
     </div>
     <div class="visita-hora">
       ${entrada?fmtH(entrada):'—'}<br>
@@ -866,7 +898,7 @@ function initMapSup(){
     const s=SUCS[sid];
     const ok=visitadas.has(String(sid));
     const icon=L.divIcon({html:`<div style="background:${ok?'#00C896':'#5A6480'};width:9px;height:9px;border-radius:50%;border:2px solid ${ok?'#fff':'#2a3050'}"></div>`,className:'',iconSize:[9,9]});
-    L.marker([s.lat,s.lng],{icon}).addTo(S.mapaS).bindPopup(`<b>${s.nombre}</b><br>${s.ciudad}${ok?'<br>✅ Visitada hoy':''}`);
+    L.marker([s.lat,s.lng],{icon}).addTo(S.mapaS).bindPopup(`<b>${s.nombre}</b><br>${s.ciudad}${ok?'<br> Visitada hoy':''}`);
   });
 }
 
@@ -909,7 +941,7 @@ function actualizarMarkersCorp(datos){
     });
     if(S.supMarkers[id]) S.supMarkers[id].setLatLng([d.lat,d.lng]).setIcon(icon);
     else S.supMarkers[id]=L.marker([d.lat,d.lng],{icon}).addTo(S.mapaC)
-      .bindPopup(`<b>${sup.nombre}</b><br>${sup.zona}<br>${online?'🟢 En línea':'⚫ Sin actividad'}`);
+      .bindPopup(`<b>${sup.nombre}</b><br>${sup.zona}<br>${online?' En línea':' Sin actividad'}`);
   });
 }
 
@@ -981,7 +1013,7 @@ async function guardarVisita(){
   push(ref(db,'visitas'),visita)
     .then(()=>{
       cerrarModal();
-      showToast('✅ Visita registrada en tiempo real');
+      showToast(' Visita registrada en tiempo real');
     })
     .catch(e=>{
       console.error(e);
@@ -989,7 +1021,7 @@ async function guardarVisita(){
     })
     .finally(()=>{
       document.getElementById('btn-submit').disabled=false;
-      document.getElementById('btn-submit').textContent='Guardar visita ✓';
+      document.getElementById('btn-submit').textContent='Guardar visita ';
     });
 }
 
@@ -997,7 +1029,7 @@ function finalizarVisita(key){
   if(!key||!window._fb)return;
   const {db,ref,update}=window._fb;
   update(ref(db,`visitas/${key}`),{salida:new Date().toISOString(),estado:'completada'})
-    .then(()=>showToast('✅ Visita finalizada'))
+    .then(()=>showToast(' Visita finalizada'))
     .catch(()=>showToast('Error al finalizar','error'));
 }
 
@@ -1006,7 +1038,7 @@ function eliminarVisita(key){
   if(!confirm('¿Seguro que querés eliminar esta visita? Esta acción no se puede deshacer.'))return;
   const {db,ref,remove}=window._fb;
   remove(ref(db,`visitas/${key}`))
-    .then(()=>showToast('🗑 Visita eliminada'))
+    .then(()=>showToast(' Visita eliminada'))
     .catch(()=>showToast('Error al eliminar','error'));
 }
 
@@ -1054,7 +1086,7 @@ function renderAlertas(minDias, maxDias, containerId){
   sucursalesARevisar.sort((a,b)=>b.diasSinVisita-a.diasSinVisita);
   const el = document.getElementById(containerId);
   if(!sucursalesARevisar.length){
-    el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:32px;margin-bottom:8px">✅</div><p>No hay sucursales en esta categoría</p></div>`;
+    el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:32px;margin-bottom:8px"></div><p>No hay sucursales en esta categoría</p></div>`;
     return;
   }
   let color='#B45309', bg='#FAEEDA';
@@ -1168,7 +1200,7 @@ function renderTabla(visitas){
       <td>${s?fmtFH(s):'<span style="color:var(--verde)">Activa</span>'}</td>
       <td>${dur}</td>
       <td>${v.tipo||'—'}</td>
-      <td>${v.fotos>0?`📷 ${v.fotos}`:'—'}</td>
+      <td>${v.fotos>0?` ${v.fotos}`:'—'}</td>
       <td><span class="badge" style="background:${col}22;color:${col}">${v.estado||'?'}</span></td>
     </tr>`;
   }).join('');
@@ -1251,7 +1283,7 @@ function exportarExcel(){
   a.download = `FarmaTrack_Historial_${fecha}.csv`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast('✅ Excel descargado');
+  showToast(' Excel descargado');
 }
 
 
@@ -1301,12 +1333,12 @@ function guardarNuevaSucursal(){
     set(ref(db, `sucursales/${codigo}`), {id: codigo, nombre: `${codigo} - ${nombre}`, ciudad, lat, lng, supId})
       .then(()=>{
         cerrarModalSucursal();
-        showToast(`✅ Sucursal ${codigo} - ${nombre} agregada`);
+        showToast(` Sucursal ${codigo} - ${nombre} agregada`);
       })
       .catch(()=>showToast('Error al guardar en Firebase','error'));
   } else {
     cerrarModalSucursal();
-    showToast(`✅ Sucursal ${codigo} agregada (sin conexión)`);
+    showToast(` Sucursal ${codigo} agregada (sin conexión)`);
   }
 }
 
@@ -1475,13 +1507,13 @@ function renderPlanSup(semana, abierto, contenido){
         <div class="plan-semana-fechas">${planSucs.length} sucursales planificadas</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
-        <span class="plan-deadline ${abierto?'open':'closed'}">${abierto?`✏️ Editable hasta el ${fechaCierrePlan(semana)} 23:59`:'🔒 Plan cerrado'}</span>
-        ${abierto ? `<button onclick="abrirModalPlan('${semana.key}')" style="background:var(--verde);color:#000;border:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📝 ${planSucs.length?'Editar plan':'Crear plan'}</button>` : ''}
+        <span class="plan-deadline ${abierto?'open':'closed'}">${abierto?` Editable hasta el ${fechaCierrePlan(semana)} 23:59`:' Plan cerrado'}</span>
+        ${abierto ? `<button onclick="abrirModalPlan('${semana.key}')" style="background:var(--verde);color:#000;border:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;"> ${planSucs.length?'Editar plan':'Crear plan'}</button>` : ''}
       </div>
     </div>`;
 
     if(planSucs.length === 0 && abierto){
-      html += `<div class="empty"><div class="empty-icon">📋</div><h3>Sin plan cargado</h3><p>Cargá tu plan antes del lunes 23:59</p></div>`;
+      html += `<div class="empty"><div class="empty-icon"></div><h3>Sin plan cargado</h3><p>Cargá tu plan antes del lunes 23:59</p></div>`;
     } else {
       html += `<div class="plan-stats">
         <div class="plan-stat">
@@ -1489,10 +1521,10 @@ function renderPlanSup(semana, abierto, contenido){
           <div class="plan-stat-l">Cobertura</div>
           <div class="cobertura-bar"><div class="cobertura-fill" style="width:${pct}%"></div></div>
         </div>
-        <div class="plan-stat"><div class="plan-stat-n" style="color:var(--verde)">${cumplidas.length}</div><div class="plan-stat-l">✅ Cumplidas</div></div>
-        <div class="plan-stat"><div class="plan-stat-n" style="color:var(--rojo)">${pendientes.length}</div><div class="plan-stat-l">❌ Pendientes</div></div>
-        <div class="plan-stat"><div class="plan-stat-n" style="color:var(--azul)">${extras.length}</div><div class="plan-stat-l">➕ Extras</div></div>
-        <div class="plan-stat"><div class="plan-stat-n">${total}</div><div class="plan-stat-l">📋 Planificadas</div></div>
+        <div class="plan-stat"><div class="plan-stat-n" style="color:var(--verde)">${cumplidas.length}</div><div class="plan-stat-l"> Cumplidas</div></div>
+        <div class="plan-stat"><div class="plan-stat-n" style="color:var(--rojo)">${pendientes.length}</div><div class="plan-stat-l"> Pendientes</div></div>
+        <div class="plan-stat"><div class="plan-stat-n" style="color:var(--azul)">${extras.length}</div><div class="plan-stat-l">+ Extras</div></div>
+        <div class="plan-stat"><div class="plan-stat-n">${total}</div><div class="plan-stat-l"> Planificadas</div></div>
       </div>`;
 
       html += `<div class="plan-lista">`;
@@ -1503,7 +1535,7 @@ function renderPlanSup(semana, abierto, contenido){
         if(!suc) return;
         const v = visitasEnSemana.find(x=>String(x.sucId)===id);
         html += `<div class="plan-item">
-          <div class="plan-item-icon cumplida">✅</div>
+          <div class="plan-item-icon cumplida"></div>
           <div class="plan-item-info">
             <div class="plan-item-nombre">${suc.nombre}</div>
             <div class="plan-item-meta">${suc.ciudad} · Visitada ${v?fmtFH(new Date(v.entrada)):''}</div>
@@ -1517,7 +1549,7 @@ function renderPlanSup(semana, abierto, contenido){
         const suc = SUCS[id];
         if(!suc) return;
         html += `<div class="plan-item">
-          <div class="plan-item-icon extra">➕</div>
+          <div class="plan-item-icon extra">+</div>
           <div class="plan-item-info">
             <div class="plan-item-nombre">${suc.nombre}</div>
             <div class="plan-item-meta">${suc.ciudad} · No estaba en el plan</div>
@@ -1531,7 +1563,7 @@ function renderPlanSup(semana, abierto, contenido){
         const suc = SUCS[id];
         if(!suc) return;
         html += `<div class="plan-item">
-          <div class="plan-item-icon ${abierto?'pendiente':'incumplida'}">${abierto?'⏳':'❌'}</div>
+          <div class="plan-item-icon ${abierto?'pendiente':'incumplida'}">${abierto?'⏳':''}</div>
           <div class="plan-item-info">
             <div class="plan-item-nombre">${suc.nombre}</div>
             <div class="plan-item-meta">${suc.ciudad}</div>
@@ -1593,9 +1625,9 @@ function renderPlanCorp(semana, contenido){
         </div>
         <div class="cobertura-bar"><div class="cobertura-fill" style="width:${pct}%;background:${pct>=80?'var(--verde)':pct>=50?'var(--amarillo)':'var(--rojo)'};"></div></div>
         <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;">
-          <span style="color:var(--verde);">✅ ${cumplidas} cumplidas</span>
-          <span style="color:var(--rojo);">❌ ${pendientes} pendientes</span>
-          <span style="color:var(--azul);">➕ ${extras} extras</span>
+          <span style="color:var(--verde);"> ${cumplidas} cumplidas</span>
+          <span style="color:var(--rojo);"> ${pendientes} pendientes</span>
+          <span style="color:var(--azul);">+ ${extras} extras</span>
         </div>
       </div>`;
     });
@@ -1648,7 +1680,7 @@ function renderListaSucursalesPlan(sucIds, filtro){
     if(!s) return '';
     const sel = S_planSeleccionadoActual.has(String(id));
     return `<div onclick="togglePlanSuc('${id}')" style="padding:10px 14px;border-radius:10px;border:1px solid ${sel?'var(--verde)':'var(--border)'};background:${sel?'rgba(0,200,150,.08)':'transparent'};cursor:pointer;display:flex;align-items:center;gap:10px;transition:.2s;" id="plan-suc-item-${id}">
-      <div style="width:20px;height:20px;border-radius:5px;border:2px solid ${sel?'var(--verde)':'var(--text3)'};background:${sel?'var(--verde)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;color:#000;">${sel?'✓':''}</div>
+      <div style="width:20px;height:20px;border-radius:5px;border:2px solid ${sel?'var(--verde)':'var(--text3)'};background:${sel?'var(--verde)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;color:#000;">${sel?'':''}</div>
       <div>
         <div style="font-size:13px;font-weight:500;">${s.nombre}</div>
         <div style="font-size:11px;color:var(--text2);">${s.ciudad}</div>
@@ -1684,7 +1716,7 @@ function guardarPlanVisitas(){
     supId: S.uid
   }).then(()=>{
     cerrarModalPlan();
-    showToast(`✅ Plan guardado — ${sucursales.length} sucursales`);
+    showToast(` Plan guardado — ${sucursales.length} sucursales`);
     renderPlanVisitas();
   }).catch(()=>showToast('Error al guardar','error'));
 }
@@ -1703,8 +1735,8 @@ function cerrarModalPlanOut(e){
 function renderNoVisitadas(){
   const el = document.getElementById('contenido-novisitadas');
   const categorias = [
-    {min:60, max:180, titulo:'⚠️ Sin visita entre 2 y 6 meses', color:'#B45309', bg:'#FAEEDA'},
-    {min:180, max:365, titulo:'🔴 Sin visita entre 6 meses y 1 año', color:'#A32D2D', bg:'#FCEBEB'},
+    {min:60, max:180, titulo:' Sin visita entre 2 y 6 meses', color:'#B45309', bg:'#FAEEDA'},
+    {min:180, max:365, titulo:' Sin visita entre 6 meses y 1 año', color:'#A32D2D', bg:'#FCEBEB'},
     {min:365, max:99999, titulo:'Sin visita hace más de 1 año', color:'#501313', bg:'#F7C1C1', punto:true},
   ];
 
@@ -1754,7 +1786,7 @@ function renderNoVisitadas(){
       </div>`;
 
     if(!lista.length){
-      html += `<div style="text-align:center;padding:20px;color:var(--text2);background:var(--card);border-radius:12px;border:1px solid var(--border);font-size:13px;">✅ Ninguna sucursal en esta categoría</div>`;
+      html += `<div style="text-align:center;padding:20px;color:var(--text2);background:var(--card);border-radius:12px;border:1px solid var(--border);font-size:13px;"> Ninguna sucursal en esta categoría</div>`;
     } else {
       html += `<div style="background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--border);">`;
       lista.forEach(({suc,supId,d}) => {
@@ -1773,7 +1805,7 @@ function renderNoVisitadas(){
   });
 
   if(totalGeneral === 0){
-    html = `<div class="empty"><div class="empty-icon">✅</div><h3>¡Todo al día!</h3><p>No hay sucursales sin visita en ninguna categoría</p></div>`;
+    html = `<div class="empty"><div class="empty-icon"></div><h3>¡Todo al día!</h3><p>No hay sucursales sin visita en ninguna categoría</p></div>`;
   }
 
   el.innerHTML = html;
@@ -1982,7 +2014,7 @@ async function renderGestion(){
         <td style="color:var(--text3);font-size:12px;padding-left:24px;">└</td>
         <td style="font-size:13px;">${suc.nombre}<br><span style="font-size:11px;color:var(--text2)">${suc.ciudad}</span></td>
         <td style="color:var(--text2);font-size:12px;">Plan</td>
-        <td>${visitada?'<span style="color:var(--verde)">✅ Sí</span>':'<span style="color:var(--text3)">—</span>'}</td>
+        <td>${visitada?'<span style="color:var(--verde)"> Sí</span>':'<span style="color:var(--text3)">—</span>'}</td>
         <td></td><td></td>
         <td>${!visitada?'<span style="color:var(--rojo);font-size:12px;">Pendiente</span>':''}</td>
       </tr>`);
@@ -1993,6 +2025,15 @@ async function renderGestion(){
 }
 
 document.getElementById('input-admin').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/farmatrack/sw.js')
+      .then(()=>console.log('SW registrado'))
+      .catch(e=>console.warn('SW error',e));
+  });
+}
 </script>
 </body>
 </html>
