@@ -844,7 +844,17 @@ function suscribirVentas(){
   onValue(ref(db,'ventas'), snap=>{
     const data = snap.val();
     if(data && Array.isArray(data) && data.length){
-      _ventasData = data.map(r => ({...r, valores: Math.round(r.valores||0), unidades: Math.round(r.unidades||0)}));
+      const _mapaFb = {};
+      data.forEach(r => {
+        const k = `${r.supervisor}||${r.nombreSucursal}||${r.mes}||${r.anio}`;
+        if(!_mapaFb[k]){
+          _mapaFb[k] = {...r, valores: Math.round(r.valores||0), unidades: Math.round(r.unidades||0)};
+        } else {
+          _mapaFb[k].valores  += Math.round(r.valores||0);
+          _mapaFb[k].unidades += Math.round(r.unidades||0);
+        }
+      });
+      _ventasData = Object.values(_mapaFb);
       // Si la pestaña está activa, renderizar
       const tabActiva = document.querySelector('.tab-content.active');
       if(tabActiva && tabActiva.id==='tab-visitas-ventas') renderVentasVentas();
@@ -2302,7 +2312,7 @@ function previewExcelVentas(e){
       const cols = ['nombreSucursal','unidades','valores','mes','anio','supervisor'];
       const labels = ['Sucursal','Unidades','Valores','Mes','Año','Supervisor'];
       document.getElementById('ventas-preview-count').textContent = `${parsed.length} registros encontrados`;
-      const fmt = n => Math.round(Number(n)||0).toLocaleString('es');
+      const fmt = n => { const v=Number(n)||0; return (v<0?'-':'')+Math.round(Math.abs(v)).toLocaleString('es'); };
       document.getElementById('ventas-preview-table').innerHTML = `
         <thead><tr>${labels.map(h=>`<th style="padding:5px 7px;background:var(--bg2);color:var(--text2);text-align:left;font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap;">${h}</th>`).join('')}</tr></thead>
         <tbody>${parsed.slice(0,10).map(r=>`<tr>${cols.map(c=>`<td style="padding:4px 7px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);white-space:nowrap;">${(c==='unidades'||c==='valores')?fmt(r[c]):r[c]}</td>`).join('')}</tr>`).join('')}
@@ -2324,7 +2334,19 @@ function cargarVentasDesdeExcel(){
   const parsed = document.getElementById('btn-cargar-ventas')._parsed;
   if(!parsed || !parsed.length) return;
   // Garantizar que valores y unidades sean enteros al almacenar
-  _ventasData = parsed.map(r => ({...r, valores: Math.round(r.valores), unidades: Math.round(r.unidades)}));
+  // Pre-agregar: colapsar filas duplicadas con mismo supervisor+sucursal+mes+año
+  const _mapa = {};
+  parsed.forEach(r => {
+    const k = `${r.supervisor}||${r.nombreSucursal}||${r.mes}||${r.anio}`;
+    if(!_mapa[k]){
+      _mapa[k] = {...r, valores: Math.round(r.valores), unidades: Math.round(r.unidades)};
+    } else {
+      _mapa[k].valores  += Math.round(r.valores);
+      _mapa[k].unidades += Math.round(r.unidades);
+    }
+  });
+  _ventasData = Object.values(_mapa);
+  console.log('[VentasDebug] registros tras colapsar duplicados:', _ventasData.length, '(original:', parsed.length, ')');
   cerrarImportVentas();
   renderVentasVentas();
   showToast(`✅ ${_ventasData.length} registros de ventas cargados`);
@@ -2399,7 +2421,7 @@ function renderTablaVV(){
   if(!_ventasData.length) return;
   const f = _vvFiltros;
   // Mostrar número sin decimales, sin alterar el valor real
-  const fmt = n => Math.round(Number(n)||0).toLocaleString('es');
+  const fmt = n => { const v=Number(n)||0; return (v<0?'-':'')+Math.round(Math.abs(v)).toLocaleString('es'); };
 
   const mesNombres = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
   const mesesOrden = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -2430,7 +2452,7 @@ function renderTablaVV(){
                    r.mes===mes && r.anio===anio &&
                    (!f.supervisor || r.supervisor===f.supervisor) &&
                    (!f.sucursal   || r.nombreSucursal===f.sucursal))
-      .reduce((s,r) => s + Math.round(r.valores), 0);
+      .reduce((s,r) => s + (r.valores|0), 0);
   }
 
   // Visitas de Firebase para un periodo
