@@ -2267,16 +2267,28 @@ function previewExcelVentas(e){
     try{
       const wb = XLSX.read(ev.target.result, {type:'array'});
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:true});
       const norm = s => String(s).trim().toUpperCase().replace(/\s+/g,' ');
+      // Parsear número robusto: acepta 452.871.291,597 (es-PY) y 452871291.597 (en)
+      const parseNum = v => {
+        if(typeof v === 'number') return Math.round(v);
+        const s = String(v).trim();
+        if(!s) return 0;
+        // Formato español: puntos de miles, coma decimal → quitar puntos, cambiar coma por punto
+        const esFormat = /^-?[\d\.]+,[\d]+$/.test(s);
+        const cleaned = esFormat
+          ? s.replace(/\./g,'').replace(',','.')
+          : s.replace(/,/g,''); // formato inglés: quitar comas de miles
+        return Math.round(parseFloat(cleaned) || 0);
+      };
       const parsed = rows.map(r=>{
         const rn = {};
         Object.keys(r).forEach(k=>{ rn[norm(k)] = r[k]; });
         return {
           codSucursal:    String(rn['COD SUCURSAL'] || rn['CODIGO'] || rn['COD'] || '').trim(),
           nombreSucursal: String(rn['NOMBRE SUCURSAL'] || rn['NOMBRE'] || '').trim(),
-          unidades:       Math.round(Number(rn['UNIDADES'] || 0)),
-          valores:        Math.round(Number(rn['VALORES'] || 0)),
+          unidades:       parseNum(rn['UNIDADES'] || 0),
+          valores:        parseNum(rn['VALORES']  || 0),
           mes:            String(rn['MES'] || '').trim().toLowerCase(),
           anio:           String(rn['AÑO'] || rn['ANO'] || rn['YEAR'] || '').trim(),
           supervisor:     String(rn['SUPERVISOR'] || '').trim().toLowerCase(),
