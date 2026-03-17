@@ -19,7 +19,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, push, onValue, update, serverTimestamp }
+  import { getDatabase, ref, set, push, onValue, update, remove, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
   import { getStorage, ref as sRef, uploadBytes, getDownloadURL }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
@@ -40,7 +40,7 @@
   const storage = getStorage(app);
 
   // Exponer globalmente para el resto del código
-  window._fb = { db, storage, ref, set, push, onValue, update, serverTimestamp, sRef, uploadBytes, getDownloadURL };
+  window._fb = { db, storage, ref, set, push, onValue, update, remove, serverTimestamp, sRef, uploadBytes, getDownloadURL };
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
 
@@ -471,6 +471,22 @@
       </table>
     </div>
   </div>
+  <!-- TAB VISITAS VS VENTAS -->
+  <div class="tab-content" id="tab-visitas-ventas">
+    <div class="section-header" style="margin-bottom:20px;">
+      <h3>Visitas vs. Ventas</h3>
+      <button onclick="abrirImportVentas()" style="display:inline-flex;align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;">📊 Importar Excel</button>
+    </div>
+    <div id="ventas-contenido">
+      <div style="text-align:center;padding:60px 20px;color:var(--text2);">
+        <div style="font-size:48px;margin-bottom:16px;">📈</div>
+        <h3 style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">Sin datos cargados</h3>
+        <p style="font-size:14px;">Importá un Excel con los datos de ventas para comenzar el análisis.</p>
+        <button onclick="abrirImportVentas()" style="margin-top:20px;display:inline-flex;align-items:center;gap:6px;background:var(--verde);color:#000;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;border:none;cursor:pointer;">📊 Importar Excel de ventas</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TAB HALLAZGOS -->
   <div class="tab-content" id="tab-hallazgos">
     <div class="section-header">
@@ -629,6 +645,41 @@
   </div>
 </div>
 
+<!-- MODAL IMPORTAR VENTAS -->
+<div class="modal-overlay" id="modal-ventas-overlay" onclick="if(event.target===this)cerrarImportVentas()">
+  <div class="modal" style="max-height:90vh;overflow-y:auto;">
+    <div class="modal-handle"></div>
+    <h2>Importar datos de ventas</h2>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:14px;">
+      El Excel debe tener estas columnas (primera fila = encabezados):
+    </p>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--text2);line-height:1.8;">
+      <b style="color:var(--verde);">Columnas requeridas:</b><br>
+      COD SUCURSAL &nbsp;|&nbsp; NOMBRE SUCURSAL &nbsp;|&nbsp; UNIDADES &nbsp;|&nbsp; VALORES &nbsp;|&nbsp; MES &nbsp;|&nbsp; AÑO &nbsp;|&nbsp; SUPERVISOR
+    </div>
+    <div class="form-group">
+      <label>Archivo Excel (.xlsx)</label>
+      <div onclick="document.getElementById('inp-excel-ventas').click()"
+           style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;"
+           id="ventas-drop-zone">
+        <input type="file" id="inp-excel-ventas" accept=".xlsx,.xls" style="display:none" onchange="previewExcelVentas(event)"/>
+        <div style="font-size:28px;margin-bottom:8px;">📊</div>
+        <p style="font-size:13px;color:var(--text2);">Toca para seleccionar el archivo Excel</p>
+      </div>
+    </div>
+    <div id="ventas-preview-wrap" style="display:none;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text);" id="ventas-preview-count"></div>
+      <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;" id="ventas-preview-table"></table>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-cancel" onclick="cerrarImportVentas()">Cancelar</button>
+      <button class="btn-submit" id="btn-cargar-ventas" onclick="cargarVentasDesdeExcel()" disabled>Cargar datos</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -717,11 +768,12 @@ function iniciarApp(){
       {label:'Inicio',tab:'tab-inicio'},
       {label:'Mi mapa',tab:'tab-mapa'},
       {sec:'Actividad'},
-      {label:'Gestion',tab:'tab-gestion'},
+      {label:'Cobertura',tab:'tab-gestion'},
       {label:'Plan de visitas',tab:'tab-plan'},
       {label:'Historial',tab:'tab-historial'},
       {label:'Sin visita',tab:'tab-novisitadas',color:'red'},
       {sec:'Reportes'},
+      {label:'Visitas vs. ventas',tab:'tab-visitas-ventas'},
       {label:'Hallazgos',tab:'tab-hallazgos'},
     ]);
     suscribirVisitas();
@@ -736,11 +788,12 @@ function iniciarApp(){
       {label:'Dashboard',tab:'tab-dashboard'},
       {label:'Supervisores',tab:'tab-supervisores'},
       {sec:'Actividad'},
-      {label:'Gestion',tab:'tab-gestion'},
+      {label:'Cobertura',tab:'tab-gestion'},
       {label:'Plan de visitas',tab:'tab-plan'},
       {label:'Historial',tab:'tab-historial'},
       {label:'Sin visita',tab:'tab-novisitadas',color:'red'},
       {sec:'Reportes'},
+      {label:'Visitas vs. ventas',tab:'tab-visitas-ventas'},
       {label:'Hallazgos',tab:'tab-hallazgos'},
     ]);
     suscribirVisitas();
@@ -776,6 +829,7 @@ function switchTab(id,el){
   if(id==='tab-gestion') renderGestion();
   if(id==='tab-plan') renderPlanVisitas();
   if(id==='tab-novisitadas') renderNoVisitadas();
+  if(id==='tab-visitas-ventas' && _ventasData.length) renderVentasVentas(_ventasData);
   // tab-hallazgos: sin lógica aún
 
 }
@@ -1514,21 +1568,21 @@ function fmtFecha(d){
   return d.toLocaleDateString('es',{day:'2-digit',month:'2-digit',year:'numeric'});
 }
 
-// Verificar si el plan está abierto (hasta lunes 23:59)
+// Verificar si el plan está abierto (hasta el viernes 23:59 de la misma semana)
 function planAbierto(semana){
   const ahora = new Date();
-  const lunesSig = new Date(semana.lunes);
-  lunesSig.setDate(lunesSig.getDate() + 7);
-  lunesSig.setHours(23,59,59,999);
+  const viernes = new Date(semana.lunes);
+  viernes.setDate(viernes.getDate() + 4); // lunes+4 = viernes
+  viernes.setHours(23,59,59,999);
   const inicio = new Date(semana.lunes);
   inicio.setHours(0,0,0,0);
-  return ahora >= inicio && ahora <= lunesSig;
+  return ahora >= inicio && ahora <= viernes;
 }
 
 function fechaCierrePlan(semana){
-  const lunesSig = new Date(semana.lunes);
-  lunesSig.setDate(lunesSig.getDate() + 7);
-  return lunesSig.toLocaleDateString('es',{weekday:'long',day:'2-digit',month:'2-digit'});
+  const viernes = new Date(semana.lunes);
+  viernes.setDate(viernes.getDate() + 4);
+  return viernes.toLocaleDateString('es',{weekday:'long',day:'2-digit',month:'2-digit'});
 }
 
 // Obtener semanas anteriores (últimas 8)
@@ -2172,6 +2226,130 @@ async function renderGestion(){
 }
 
 document.getElementById('input-admin').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+
+// =============================================
+// VISITAS VS. VENTAS
+// =============================================
+let _ventasData = [];
+
+function abrirImportVentas(){
+  _ventasData = [];
+  document.getElementById('ventas-preview-wrap').style.display = 'none';
+  document.getElementById('btn-cargar-ventas').disabled = true;
+  document.getElementById('inp-excel-ventas').value = '';
+  document.getElementById('ventas-drop-zone').style.borderColor = '';
+  document.getElementById('modal-ventas-overlay').classList.add('open');
+}
+function cerrarImportVentas(){
+  document.getElementById('modal-ventas-overlay').classList.remove('open');
+}
+
+function previewExcelVentas(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      const wb = XLSX.read(ev.target.result, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+
+      // Normalizar nombres de columna (case-insensitive, espacios)
+      const norm = s => String(s).trim().toUpperCase().replace(/\s+/g,' ');
+      _ventasData = rows.map(r=>{
+        const rn = {};
+        Object.keys(r).forEach(k=>{ rn[norm(k)] = r[k]; });
+        return {
+          codSucursal:  String(rn['COD SUCURSAL'] || rn['CODIGO'] || rn['COD'] || '').trim(),
+          nombreSucursal: String(rn['NOMBRE SUCURSAL'] || rn['NOMBRE'] || '').trim(),
+          unidades:     Number(rn['UNIDADES'] || 0),
+          valores:      Number(rn['VALORES'] || 0),
+          mes:          String(rn['MES'] || '').trim(),
+          anio:         String(rn['AÑO'] || rn['ANO'] || rn['YEAR'] || '').trim(),
+          supervisor:   String(rn['SUPERVISOR'] || '').trim().toLowerCase(),
+        };
+      }).filter(r => r.codSucursal || r.nombreSucursal);
+
+      if(!_ventasData.length){
+        showToast('No se encontraron filas válidas en el Excel','error'); return;
+      }
+
+      // Preview
+      const cols = ['codSucursal','nombreSucursal','unidades','valores','mes','anio','supervisor'];
+      const labels = ['Cód.','Nombre','Unidades','Valores','Mes','Año','Supervisor'];
+      document.getElementById('ventas-preview-count').textContent = `${_ventasData.length} registros encontrados`;
+      document.getElementById('ventas-preview-table').innerHTML = `
+        <thead><tr>${labels.map(h=>`<th style="padding:5px 7px;background:var(--bg2);color:var(--text2);text-align:left;font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap;">${h}</th>`).join('')}</tr></thead>
+        <tbody>${_ventasData.slice(0,12).map(r=>`<tr>${cols.map(c=>`<td style="padding:4px 7px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);white-space:nowrap;">${r[c]}</td>`).join('')}</tr>`).join('')}
+        ${_ventasData.length>12?`<tr><td colspan="7" style="padding:5px 7px;font-size:11px;color:var(--text2);text-align:center;">... y ${_ventasData.length-12} más</td></tr>`:''}
+        </tbody>`;
+      document.getElementById('ventas-preview-wrap').style.display = 'block';
+      document.getElementById('btn-cargar-ventas').disabled = false;
+      document.getElementById('ventas-drop-zone').style.borderColor = 'var(--verde)';
+    } catch(err){
+      showToast('Error leyendo el Excel: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function cargarVentasDesdeExcel(){
+  if(!_ventasData.length) return;
+  cerrarImportVentas();
+  renderVentasVentas(_ventasData);
+  showToast(`✅ ${_ventasData.length} registros de ventas cargados`);
+}
+
+function renderVentasVentas(datos){
+  // Agrupar por mes/año para mostrar resumen
+  const grupos = {};
+  datos.forEach(r=>{
+    const key = `${r.mes} ${r.anio}`;
+    if(!grupos[key]) grupos[key]={mes:r.mes, anio:r.anio, unidades:0, valores:0, sucursales:new Set()};
+    grupos[key].unidades += r.unidades;
+    grupos[key].valores  += r.valores;
+    grupos[key].sucursales.add(r.codSucursal);
+  });
+
+  const totalUnidades = datos.reduce((s,r)=>s+r.unidades,0);
+  const totalValores  = datos.reduce((s,r)=>s+r.valores,0);
+
+  const fmt = n => n.toLocaleString('es');
+
+  const contenido = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;">
+      <div class="stat-card verde"><div class="stat-num" style="color:var(--verde)">${datos.length}</div><div class="stat-label">Registros cargados</div></div>
+      <div class="stat-card azul"><div class="stat-num" style="color:var(--azul)">${fmt(totalUnidades)}</div><div class="stat-label">Total unidades</div></div>
+      <div class="stat-card amarillo"><div class="stat-num" style="color:var(--amarillo);font-size:18px;">₲ ${fmt(totalValores)}</div><div class="stat-label">Total valores</div></div>
+      <div class="stat-card rojo"><div class="stat-num" style="color:var(--rojo)">${Object.keys(grupos).length}</div><div class="stat-label">Períodos</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <h3 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">Detalle por sucursal</h3>
+      <button onclick="abrirImportVentas()" style="display:inline-flex;align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:12px;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;">🔄 Reimportar</button>
+    </div>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr>
+          <th>Cód.</th><th>Sucursal</th><th>Supervisor</th><th>Mes</th><th>Año</th>
+          <th style="text-align:right;">Unidades</th><th style="text-align:right;">Valores</th>
+        </tr></thead>
+        <tbody>
+          ${datos.map(r=>`<tr>
+            <td style="color:var(--text2);font-size:12px;">${r.codSucursal}</td>
+            <td>${r.nombreSucursal}</td>
+            <td style="font-size:12px;color:var(--text2);">${r.supervisor}</td>
+            <td style="font-size:12px;">${r.mes}</td>
+            <td style="font-size:12px;">${r.anio}</td>
+            <td style="text-align:right;color:var(--azul);">${fmt(r.unidades)}</td>
+            <td style="text-align:right;color:var(--amarillo);">₲ ${fmt(r.valores)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  document.getElementById('ventas-contenido').innerHTML = contenido;
+}
+
 </script>
 <script>
 if('serviceWorker' in navigator){
