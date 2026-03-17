@@ -2294,13 +2294,15 @@ function previewExcelVentas(e){
           supervisor:     String(rn['SUPERVISOR'] || '').trim().toLowerCase(),
         };
       }).filter(r => r.codSucursal || r.nombreSucursal);
+      // DEBUG: log first 3 rows to console
+      console.log('[VentasDebug] primeras filas parseadas:', parsed.slice(0,3).map(r=>({suc:r.nombreSucursal,val:r.valores,uni:r.unidades})));
 
       if(!parsed.length){ showToast('No se encontraron filas válidas en el Excel','error'); return; }
 
       const cols = ['nombreSucursal','unidades','valores','mes','anio','supervisor'];
       const labels = ['Sucursal','Unidades','Valores','Mes','Año','Supervisor'];
       document.getElementById('ventas-preview-count').textContent = `${parsed.length} registros encontrados`;
-      const fmt = n => Math.round(n).toLocaleString('es');
+      const fmt = n => Math.round(Number(n)||0).toLocaleString('es-PY',{maximumFractionDigits:0});
       document.getElementById('ventas-preview-table').innerHTML = `
         <thead><tr>${labels.map(h=>`<th style="padding:5px 7px;background:var(--bg2);color:var(--text2);text-align:left;font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap;">${h}</th>`).join('')}</tr></thead>
         <tbody>${parsed.slice(0,10).map(r=>`<tr>${cols.map(c=>`<td style="padding:4px 7px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);white-space:nowrap;">${(c==='unidades'||c==='valores')?fmt(r[c]):r[c]}</td>`).join('')}</tr>`).join('')}
@@ -2379,7 +2381,10 @@ function renderVentasVentas(){
         <option value="">Todas las sucursales</option>
         ${sucursales.map(s=>`<option value="${s}" ${_vvFiltros.sucursal===s?'selected':''}>${s}</option>`).join('')}
       </select>
-      <button onclick="abrirImportVentas()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;">🔄 Reimportar</button>
+      <div style="margin-left:auto;display:flex;gap:8px;">
+        <button onclick="vaciarVentas()" style="display:inline-flex;align-items:center;gap:6px;background:transparent;color:var(--rojo);border:1px solid var(--rojo);font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;cursor:pointer;">🗑 Vaciar datos</button>
+        <button onclick="abrirImportVentas()" style="display:inline-flex;align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;">🔄 Reimportar</button>
+      </div>
     </div>
     <!-- Tabla comparativa -->
     <div id="tabla-vv-wrap"></div>
@@ -2393,7 +2398,7 @@ function renderTablaVV(){
   if(!_ventasData.length) return;
   const f = _vvFiltros;
   // Mostrar número sin decimales, sin alterar el valor real
-  const fmt = n => Math.round(n).toLocaleString('es');
+  const fmt = n => Math.round(Number(n)||0).toLocaleString('es-PY',{maximumFractionDigits:0});
 
   const mesNombres = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
   const mesesOrden = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -2546,6 +2551,24 @@ function renderTablaVV(){
         </tbody>
       </table>
     </div>`;
+}
+
+function vaciarVentas(){
+  if(!confirm('¿Vaciar todos los datos de ventas? Esta acción no se puede deshacer.')) return;
+  _ventasData = [];
+  _vvFiltros = { anio:'', mes:'', supervisor:'', sucursal:'' };
+  if(window._fb){
+    const {db,ref,remove}=window._fb;
+    remove(ref(db,'ventas')).catch(()=>{});
+  }
+  document.getElementById('ventas-contenido').innerHTML = `
+    <div style="text-align:center;padding:60px 20px;color:var(--text2);">
+      <div style="font-size:48px;margin-bottom:16px;">📈</div>
+      <h3 style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">Sin datos cargados</h3>
+      <p style="font-size:14px;">Importá un Excel con los datos de ventas para comenzar el análisis.</p>
+      <button onclick="abrirImportVentas()" style="margin-top:20px;display:inline-flex;align-items:center;gap:6px;background:var(--verde);color:#000;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;border:none;cursor:pointer;">📊 Importar Excel de ventas</button>
+    </div>`;
+  showToast('✅ Datos de ventas eliminados');
 }
 
 </script>
