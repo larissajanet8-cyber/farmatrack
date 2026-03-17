@@ -777,6 +777,7 @@ function iniciarApp(){
       {label:'Hallazgos',tab:'tab-hallazgos'},
     ]);
     suscribirVisitas();
+    suscribirVentas();
     iniciarGPS();
   } else {
 
@@ -797,6 +798,7 @@ function iniciarApp(){
       {label:'Hallazgos',tab:'tab-hallazgos'},
     ]);
     suscribirVisitas();
+    suscribirVentas();
     suscribirUbicaciones();
   }
 }
@@ -837,6 +839,19 @@ function switchTab(id,el){
 // =============================================
 // FIREBASE — SUSCRIPCIÓN VISITAS
 // =============================================
+function suscribirVentas(){
+  const {db,ref,onValue}=window._fb;
+  onValue(ref(db,'ventas'), snap=>{
+    const data = snap.val();
+    if(data && Array.isArray(data) && data.length){
+      _ventasData = data;
+      // Si la pestaña está activa, renderizar
+      const tabActiva = document.querySelector('.tab-content.active');
+      if(tabActiva && tabActiva.id==='tab-visitas-ventas') renderVentasVentas();
+    }
+  });
+}
+
 function suscribirVisitas(){
   const {db,ref,onValue}=window._fb;
   onValue(ref(db,'visitas'), snap=>{
@@ -2298,6 +2313,13 @@ function cargarVentasDesdeExcel(){
   cerrarImportVentas();
   renderVentasVentas();
   showToast(`✅ ${_ventasData.length} registros de ventas cargados`);
+  // Persistir en Firebase
+  if(window._fb){
+    const {db,ref,set}=window._fb;
+    set(ref(db,'ventas'), parsed)
+      .then(()=>showToast('💾 Datos guardados en la nube'))
+      .catch(()=>showToast('⚠️ No se pudo guardar en la nube','error'));
+  }
 }
 
 // ── Filtros activos ────────────────────────────────────────────────────────
@@ -2361,10 +2383,11 @@ function renderTablaVV(){
     (!f.sucursal   || r.nombreSucursal === f.sucursal)
   );
 
-  // Construir filas: una por combinación supervisor+sucursal (sumando si hay varios meses)
+  // Construir filas: UNA por supervisor+sucursal, sumando todos los periodos filtrados
   const mapaFilas = {};
   datosFilt.forEach(r => {
-    const key = `${r.supervisor}||${r.codSucursal}||${r.nombreSucursal}`;
+    // Clave solo por supervisor+nombre (robusto aunque el cod varíe)
+    const key = `${r.supervisor}||${r.nombreSucursal}`;
     if(!mapaFilas[key]) mapaFilas[key] = {supervisor:r.supervisor, sucursal:r.nombreSucursal, codSuc:r.codSucursal, unidades:0, valores:0};
     mapaFilas[key].unidades += r.unidades;
     mapaFilas[key].valores  += r.valores;
