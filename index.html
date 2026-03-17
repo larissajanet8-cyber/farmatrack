@@ -2431,70 +2431,60 @@ function renderVentasVentas(){
 function renderTablaVV(){
   if(!_ventasData.length) return;
   const f = _vvFiltros;
-  // Mostrar número sin decimales, sin alterar el valor real
-  const fmt = n => { const v=Number(n)||0; return (v<0?'-':'')+Math.round(Math.abs(v)).toLocaleString('es'); };
+  const fmt = n => { const v=Math.round(Number(n)||0); return (v<0?'-':'')+Math.abs(v).toLocaleString('es'); };
 
-  const mesNombres = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
   const mesesOrden = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const mesNombres = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
 
-  // Determinar mes actual y mes anterior según filtro
-  // "mes actual" = mes seleccionado en filtro (o el más reciente disponible)
-  const aniosDisp   = [...new Set(_ventasData.map(r=>r.anio))].sort();
-  const mesesDisp   = [...new Set(_ventasData.map(r=>r.mes))];
+  const aniosDisp = [...new Set(_ventasData.map(r=>r.anio))].sort();
+  const mesesDisp = [...new Set(_ventasData.map(r=>r.mes))];
 
-  // Obtener mes/año "actual" del filtro (o último disponible)
-  let mesActual = f.mes  || mesesDisp.sort((a,b)=>mesesOrden.indexOf(a)-mesesOrden.indexOf(b)).slice(-1)[0] || '';
-  let anioActual= f.anio || aniosDisp.slice(-1)[0] || '';
+  let mesActual  = f.mes  || mesesDisp.sort((a,b)=>mesesOrden.indexOf(a)-mesesOrden.indexOf(b)).slice(-1)[0] || '';
+  let anioActual = f.anio || aniosDisp.slice(-1)[0] || '';
 
-  // Calcular mes anterior
   const idxMesAct = mesesOrden.indexOf(mesActual);
   let mesAnterior = '', anioAnterior = anioActual;
-  if(idxMesAct > 0){
-    mesAnterior = mesesOrden[idxMesAct - 1];
-  } else if(idxMesAct === 0){
-    mesAnterior = 'diciembre';
-    anioAnterior = String(parseInt(anioActual) - 1);
-  }
+  if(idxMesAct > 0)       { mesAnterior = mesesOrden[idxMesAct-1]; }
+  else if(idxMesAct === 0) { mesAnterior = 'diciembre'; anioAnterior = String(parseInt(anioActual)-1); }
 
-  // Función para sumar valores de un mes/año concreto para una sucursal+supervisor
-  function ventasDe(nombreSuc, supId, mes, anio){
-    return _ventasData
-      .filter(r => r.nombreSucursal===nombreSuc && r.supervisor===supId &&
-                   r.mes===mes && r.anio===anio &&
-                   (!f.supervisor || r.supervisor===f.supervisor) &&
-                   (!f.sucursal   || r.nombreSucursal===f.sucursal))
-      .reduce((s,r) => s + Math.round(r.valores||0), 0);
-  }
+  // ── Construir mapa de ventas directamente desde _ventasData (ya colapsado) ──
+  // Clave: supervisor||sucursal||mes||año → valor ya es único por esa combinación
+  const mapaVentas = {};
+  _ventasData.forEach(r => {
+    const k = `${r.supervisor}||${r.nombreSucursal}||${r.mes}||${r.anio}`;
+    mapaVentas[k] = Math.round(r.valores || 0);
+  });
+  const getVenta = (sup, suc, mes, anio) => mapaVentas[`${sup}||${suc}||${mes}||${anio}`] || 0;
 
-  // Visitas de Firebase para un periodo
+  // ── Visitas desde Firebase ──────────────────────────────────────────────
   const todasVisitas = Object.values(S.visitas || {});
   function visitasDe(codSuc, supId, mes, anio){
-    const mesNum  = mesNombres[mes]  || null;
-    const anioNum = parseInt(anio)   || null;
+    const mesNum = mesNombres[mes] || null;
+    const anioNum = parseInt(anio) || null;
     return todasVisitas.filter(v => {
       if(String(v.sucId) !== String(codSuc)) return false;
       if(supId && v.supId !== supId) return false;
       if(!v.entrada) return false;
       const d = new Date(v.entrada);
-      if(mesNum  && d.getMonth()+1 !== mesNum)    return false;
+      if(mesNum  && d.getMonth()+1 !== mesNum)   return false;
       if(anioNum && d.getFullYear() !== anioNum) return false;
       return true;
     }).length;
   }
 
-  // Construir set de sucursales únicas (filtradas por supervisor/sucursal si aplica)
+  // ── Sucursales únicas aplicando filtros ─────────────────────────────────
   const setSucs = {};
   _ventasData.forEach(r => {
-    if(f.supervisor && r.supervisor !== f.supervisor) return;
-    if(f.sucursal   && r.nombreSucursal !== f.sucursal)   return;
+    if(f.supervisor && r.supervisor    !== f.supervisor)    return;
+    if(f.sucursal   && r.nombreSucursal !== f.sucursal)     return;
     const key = `${r.supervisor}||${r.nombreSucursal}`;
     if(!setSucs[key]) setSucs[key] = {supervisor:r.supervisor, sucursal:r.nombreSucursal, codSuc:r.codSucursal};
   });
 
-  // Construir filas con los 6 valores
+  // ── Construir filas ─────────────────────────────────────────────────────
   let filas = Object.values(setSucs).map(r => {
-    const vAct  = ventasDe(r.sucursal, r.supervisor, mesActual,    anioActual);
-    const vAnt  = ventasDe(r.sucursal, r.supervisor, mesAnterior,  anioAnterior);
+    const vAct  = getVenta(r.supervisor, r.sucursal, mesActual,   anioActual);
+    const vAnt  = getVenta(r.supervisor, r.sucursal, mesAnterior, anioAnterior);
     const difV  = vAct - vAnt;
     const visAct = visitasDe(r.codSuc, r.supervisor, mesActual,   anioActual);
     const visAnt = visitasDe(r.codSuc, r.supervisor, mesAnterior, anioAnterior);
