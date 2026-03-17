@@ -2324,9 +2324,16 @@ function cargarVentasDesdeExcel(){
 
 // ── Filtros activos ────────────────────────────────────────────────────────
 let _vvFiltros = { anio:'', mes:'', supervisor:'', sucursal:'' };
+let _vvSort   = { col:'ventaActual', dir:'desc' }; // columna y dirección de orden
 
 function setFiltroVV(campo, val){
   _vvFiltros[campo] = val;
+  renderTablaVV();
+}
+
+function setSortVV(col){
+  if(_vvSort.col === col) _vvSort.dir = _vvSort.dir==='desc'?'asc':'desc';
+  else { _vvSort.col = col; _vvSort.dir = 'desc'; }
   renderTablaVV();
 }
 
@@ -2373,92 +2380,156 @@ function renderVentasVentas(){
 function renderTablaVV(){
   if(!_ventasData.length) return;
   const f = _vvFiltros;
+  // Mostrar número sin decimales, sin alterar el valor real
   const fmt = n => Math.round(n).toLocaleString('es');
 
-  // Filtrar datos de ventas
-  const datosFilt = _ventasData.filter(r =>
-    (!f.anio       || r.anio === f.anio) &&
-    (!f.mes        || r.mes  === f.mes) &&
-    (!f.supervisor || r.supervisor === f.supervisor) &&
-    (!f.sucursal   || r.nombreSucursal === f.sucursal)
-  );
-
-  // Construir filas: UNA por supervisor+sucursal, sumando todos los periodos filtrados
-  const mapaFilas = {};
-  datosFilt.forEach(r => {
-    // Clave solo por supervisor+nombre (robusto aunque el cod varíe)
-    const key = `${r.supervisor}||${r.nombreSucursal}`;
-    if(!mapaFilas[key]) mapaFilas[key] = {supervisor:r.supervisor, sucursal:r.nombreSucursal, codSuc:r.codSucursal, unidades:0, valores:0};
-    mapaFilas[key].unidades += r.unidades;
-    mapaFilas[key].valores  += r.valores;
-  });
-
-  const filas = Object.values(mapaFilas).sort((a,b)=>a.supervisor.localeCompare(b.supervisor)||a.sucursal.localeCompare(b.sucursal));
-
-  // Contar visitas desde S.visitas cruzando por codSucursal
-  const visitasMes = Object.values(S.visitas || {});
-  // Si hay filtro de mes/año, filtrar visitas también
   const mesNombres = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
-  function visitasDeSucursal(codSuc, supId){
-    return visitasMes.filter(v => {
+  const mesesOrden = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+  // Determinar mes actual y mes anterior según filtro
+  // "mes actual" = mes seleccionado en filtro (o el más reciente disponible)
+  const aniosDisp   = [...new Set(_ventasData.map(r=>r.anio))].sort();
+  const mesesDisp   = [...new Set(_ventasData.map(r=>r.mes))];
+
+  // Obtener mes/año "actual" del filtro (o último disponible)
+  let mesActual = f.mes  || mesesDisp.sort((a,b)=>mesesOrden.indexOf(a)-mesesOrden.indexOf(b)).slice(-1)[0] || '';
+  let anioActual= f.anio || aniosDisp.slice(-1)[0] || '';
+
+  // Calcular mes anterior
+  const idxMesAct = mesesOrden.indexOf(mesActual);
+  let mesAnterior = '', anioAnterior = anioActual;
+  if(idxMesAct > 0){
+    mesAnterior = mesesOrden[idxMesAct - 1];
+  } else if(idxMesAct === 0){
+    mesAnterior = 'diciembre';
+    anioAnterior = String(parseInt(anioActual) - 1);
+  }
+
+  // Función para sumar valores de un mes/año concreto para una sucursal+supervisor
+  function ventasDe(nombreSuc, supId, mes, anio){
+    return _ventasData
+      .filter(r => r.nombreSucursal===nombreSuc && r.supervisor===supId &&
+                   r.mes===mes && r.anio===anio &&
+                   (!f.supervisor || r.supervisor===f.supervisor) &&
+                   (!f.sucursal   || r.nombreSucursal===f.sucursal))
+      .reduce((s,r) => s + r.valores, 0);
+  }
+
+  // Visitas de Firebase para un periodo
+  const todasVisitas = Object.values(S.visitas || {});
+  function visitasDe(codSuc, supId, mes, anio){
+    const mesNum  = mesNombres[mes]  || null;
+    const anioNum = parseInt(anio)   || null;
+    return todasVisitas.filter(v => {
       if(String(v.sucId) !== String(codSuc)) return false;
       if(supId && v.supId !== supId) return false;
       if(!v.entrada) return false;
       const d = new Date(v.entrada);
-      const mesNum = f.mes ? mesNombres[f.mes] : null;
-      const anioNum = f.anio ? parseInt(f.anio) : null;
-      if(mesNum && d.getMonth()+1 !== mesNum) return false;
+      if(mesNum  && d.getMonth()+1 !== mesNum)    return false;
       if(anioNum && d.getFullYear() !== anioNum) return false;
       return true;
     }).length;
   }
+
+  // Construir set de sucursales únicas (filtradas por supervisor/sucursal si aplica)
+  const setSucs = {};
+  _ventasData.forEach(r => {
+    if(f.supervisor && r.supervisor !== f.supervisor) return;
+    if(f.sucursal   && r.nombreSucursal !== f.sucursal)   return;
+    const key = `${r.supervisor}||${r.nombreSucursal}`;
+    if(!setSucs[key]) setSucs[key] = {supervisor:r.supervisor, sucursal:r.nombreSucursal, codSuc:r.codSucursal};
+  });
+
+  // Construir filas con los 6 valores
+  let filas = Object.values(setSucs).map(r => {
+    const vAct  = ventasDe(r.sucursal, r.supervisor, mesActual,    anioActual);
+    const vAnt  = ventasDe(r.sucursal, r.supervisor, mesAnterior,  anioAnterior);
+    const difV  = vAct - vAnt;
+    const visAct = visitasDe(r.codSuc, r.supervisor, mesActual,   anioActual);
+    const visAnt = visitasDe(r.codSuc, r.supervisor, mesAnterior, anioAnterior);
+    const difVis = visAct - visAnt;
+    return { ...r, vAct, vAnt, difV, visAct, visAnt, difVis };
+  });
+
+  // Ordenar
+  const { col, dir } = _vvSort;
+  const colMap = { supervisor:'supervisor', sucursal:'sucursal', ventaActual:'vAct', ventaAnterior:'vAnt', difVenta:'difV', visActual:'visAct', visAnterior:'visAnt', difVisitas:'difVis' };
+  const campo = colMap[col] || 'vAct';
+  filas.sort((a,b) => {
+    const va = typeof a[campo]==='string' ? a[campo].localeCompare(b[campo]) : (a[campo]-b[campo]);
+    return dir==='desc' ? -va : va;
+  });
 
   if(!filas.length){
     document.getElementById('tabla-vv-wrap').innerHTML = `<div style="text-align:center;padding:40px;color:var(--text2);"><div style="font-size:32px;margin-bottom:8px;">🔍</div><p>Sin resultados con los filtros aplicados</p></div>`;
     return;
   }
 
-  const supColors = {};
-  Object.entries(SUPS).forEach(([id,s])=>{ supColors[id]=s.color; });
   const getSupColor = sup => {
     const entry = Object.entries(SUPS).find(([,s])=>s.nombre.toLowerCase()===sup);
     return entry ? entry[1].color : 'var(--text2)';
   };
 
-  const totUni = filas.reduce((s,r)=>s+r.unidades,0);
-  const totVal = filas.reduce((s,r)=>s+r.valores,0);
-  const totVis = filas.reduce((s,r)=>s+visitasDeSucursal(r.codSuc, r.supervisor),0);
+  const arrow = col => {
+    const isActive = _vvSort.col === col;
+    const icon = !isActive ? '↕' : _vvSort.dir==='desc' ? '↓' : '↑';
+    return `<span style="font-size:11px;margin-left:4px;opacity:${isActive?1:0.35};">${icon}</span>`;
+  };
+
+  const thStyle = (col, align='right') =>
+    `style="text-align:${align};cursor:pointer;user-select:none;white-space:nowrap;" onclick="setSortVV('${col}')"`;
+
+  const difColor = n => n > 0 ? 'var(--verde)' : n < 0 ? 'var(--rojo)' : 'var(--text2)';
+  const difPrefix = n => n > 0 ? '+' : '';
+
+  const totVAct  = filas.reduce((s,r)=>s+r.vAct, 0);
+  const totVAnt  = filas.reduce((s,r)=>s+r.vAnt, 0);
+  const totDifV  = totVAct - totVAnt;
+  const totVisAct= filas.reduce((s,r)=>s+r.visAct, 0);
+  const totVisAnt= filas.reduce((s,r)=>s+r.visAnt, 0);
+  const totDifVis= totVisAct - totVisAnt;
+
+  const mesActLabel = mesActual ? mesActual.charAt(0).toUpperCase()+mesActual.slice(1) : '—';
+  const mesAntLabel = mesAnterior ? mesAnterior.charAt(0).toUpperCase()+mesAnterior.slice(1) : '—';
 
   document.getElementById('tabla-vv-wrap').innerHTML = `
-    <div style="margin-bottom:8px;font-size:13px;color:var(--text2);">${filas.length} sucursales</div>
+    <div style="margin-bottom:8px;font-size:13px;color:var(--text2);">${filas.length} sucursales · <b style="color:var(--text)">${mesActLabel} ${anioActual}</b> vs <b style="color:var(--text2)">${mesAntLabel} ${anioAnterior}</b></div>
     <div class="tabla-wrap">
       <table>
         <thead><tr>
-          <th>Supervisor</th>
-          <th>Sucursal</th>
-          <th style="text-align:right;">Unidades</th>
-          <th style="text-align:right;">Valores (₲)</th>
-          <th style="text-align:center;">Visitas periodo</th>
+          <th ${thStyle('supervisor','left')}>Supervisor ${arrow('supervisor')}</th>
+          <th ${thStyle('sucursal','left')}>Sucursal ${arrow('sucursal')}</th>
+          <th ${thStyle('ventaActual')}>Venta ${mesActLabel} ${arrow('ventaActual')}</th>
+          <th ${thStyle('ventaAnterior')}>Venta ${mesAntLabel} ${arrow('ventaAnterior')}</th>
+          <th ${thStyle('difVenta')}>Dif. Venta ${arrow('difVenta')}</th>
+          <th ${thStyle('visActual','center')}>Visitas ${mesActLabel} ${arrow('visActual')}</th>
+          <th ${thStyle('visAnterior','center')}>Visitas ${mesAntLabel} ${arrow('visAnterior')}</th>
+          <th ${thStyle('difVisitas','center')}>Dif. Visitas ${arrow('difVisitas')}</th>
         </tr></thead>
         <tbody>
           ${filas.map(r=>{
-            const vis = visitasDeSucursal(r.codSuc, r.supervisor);
             const color = getSupColor(r.supervisor);
             return `<tr>
               <td><b style="color:${color}">${r.supervisor.charAt(0).toUpperCase()+r.supervisor.slice(1)}</b></td>
               <td style="font-size:13px;">${r.sucursal}</td>
-              <td style="text-align:right;color:var(--azul);">${fmt(r.unidades)}</td>
-              <td style="text-align:right;color:var(--amarillo);">${fmt(r.valores)}</td>
+              <td style="text-align:right;color:var(--amarillo);">${fmt(r.vAct)}</td>
+              <td style="text-align:right;color:var(--text2);">${fmt(r.vAnt)}</td>
+              <td style="text-align:right;color:${difColor(r.difV)};font-weight:600;">${difPrefix(r.difV)}${fmt(r.difV)}</td>
               <td style="text-align:center;">
-                <span style="display:inline-block;background:${vis>0?'rgba(0,200,150,.15)':'var(--bg3)'};color:${vis>0?'var(--verde)':'var(--text3)'};border-radius:20px;padding:2px 10px;font-size:13px;font-weight:600;">${vis}</span>
+                <span style="display:inline-block;background:${r.visAct>0?'rgba(0,200,150,.15)':'var(--bg3)'};color:${r.visAct>0?'var(--verde)':'var(--text3)'};border-radius:20px;padding:2px 10px;font-size:13px;font-weight:600;">${r.visAct}</span>
               </td>
+              <td style="text-align:center;color:var(--text2);">${r.visAnt}</td>
+              <td style="text-align:center;color:${difColor(r.difVis)};font-weight:600;">${difPrefix(r.difVis)}${r.difVis}</td>
             </tr>`;
           }).join('')}
-          <tr style="background:var(--card2);font-weight:700;">
+          <tr style="background:var(--card2);font-weight:700;border-top:2px solid var(--border);">
             <td colspan="2" style="color:var(--text2);font-size:12px;">TOTAL</td>
-            <td style="text-align:right;color:var(--azul);">${fmt(totUni)}</td>
-            <td style="text-align:right;color:var(--amarillo);">${fmt(totVal)}</td>
-            <td style="text-align:center;color:var(--verde);">${totVis}</td>
+            <td style="text-align:right;color:var(--amarillo);">${fmt(totVAct)}</td>
+            <td style="text-align:right;color:var(--text2);">${fmt(totVAnt)}</td>
+            <td style="text-align:right;color:${difColor(totDifV)};font-weight:700;">${difPrefix(totDifV)}${fmt(totDifV)}</td>
+            <td style="text-align:center;color:var(--verde);">${totVisAct}</td>
+            <td style="text-align:center;color:var(--text2);">${totVisAnt}</td>
+            <td style="text-align:center;color:${difColor(totDifVis)};font-weight:700;">${difPrefix(totDifVis)}${totDifVis}</td>
           </tr>
         </tbody>
       </table>
