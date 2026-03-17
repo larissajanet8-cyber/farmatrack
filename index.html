@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
 <!-- Firebase SDK -->
 <script type="module">
@@ -470,6 +471,17 @@
       </table>
     </div>
   </div>
+  <!-- TAB HALLAZGOS -->
+  <div class="tab-content" id="tab-hallazgos">
+    <div class="section-header">
+      <h3>Hallazgos</h3>
+    </div>
+    <div style="text-align:center;padding:60px 20px;color:var(--text2);">
+      <div style="font-size:48px;margin-bottom:16px;">🔍</div>
+      <h3 style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">Próximamente</h3>
+      <p style="font-size:14px;">Esta sección está en construcción. Pronto podrás registrar y gestionar hallazgos desde aquí.</p>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -522,39 +534,77 @@
 <button class="btn-add-suc" id="btn-add-suc" onclick="abrirModalSucursal()">+ Agregar sucursal</button>
 
 <div class="modal-overlay" id="modal-suc-overlay" onclick="cerrarModalSucOut(event)">
-  <div class="modal">
+  <div class="modal" style="max-height:90vh;overflow-y:auto;">
     <div class="modal-handle"></div>
-    <h2>Nueva sucursal</h2>
-    <p>La sucursal se agrega al sistema en tiempo real</p>
-    <div class="form-group">
-      <label>Código sucursal</label>
-      <input type="text" id="suc-codigo" placeholder="Ej: 173"/>
+    <h2>Agregar sucursal</h2>
+
+    <!-- Tabs: individual / masivo -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <button id="suc-tab-uno" onclick="setSucTab('uno')" style="flex:1;padding:9px;border-radius:10px;border:1px solid var(--verde);background:var(--verde-glow);color:var(--verde);font-weight:600;font-size:13px;cursor:pointer;transition:.2s;">Una sucursal</button>
+      <button id="suc-tab-masivo" onclick="setSucTab('masivo')" style="flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:500;font-size:13px;cursor:pointer;transition:.2s;">Carga masiva Excel</button>
     </div>
-    <div class="form-group">
-      <label>Nombre</label>
-      <input type="text" id="suc-nombre" placeholder="Ej: ASUNCION CENTRO"/>
+
+    <!-- Panel individual -->
+    <div id="suc-panel-uno">
+      <p style="color:var(--text2);font-size:13px;margin-bottom:16px;">La sucursal se agrega al sistema en tiempo real</p>
+      <div class="form-group">
+        <label>Código sucursal</label>
+        <input type="text" id="suc-codigo" placeholder="Ej: 173"/>
+      </div>
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="suc-nombre" placeholder="Ej: ASUNCION CENTRO"/>
+      </div>
+      <div class="form-group">
+        <label>Ciudad</label>
+        <input type="text" id="suc-ciudad" placeholder="Ej: Asunción"/>
+      </div>
+      <div class="form-group">
+        <label>Latitud</label>
+        <input type="number" id="suc-lat" placeholder="Ej: -25.2867" step="any"/>
+      </div>
+      <div class="form-group">
+        <label>Longitud</label>
+        <input type="number" id="suc-lng" placeholder="Ej: -57.6470" step="any"/>
+      </div>
+      <div class="form-group">
+        <label>Supervisor</label>
+        <select id="suc-supervisor">
+          <option value="">Seleccioná un supervisor...</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="cerrarModalSucursal()">Cancelar</button>
+        <button class="btn-submit" onclick="guardarNuevaSucursal()">Guardar sucursal </button>
+      </div>
     </div>
-    <div class="form-group">
-      <label>Ciudad</label>
-      <input type="text" id="suc-ciudad" placeholder="Ej: Asunción"/>
-    </div>
-    <div class="form-group">
-      <label>Latitud</label>
-      <input type="number" id="suc-lat" placeholder="Ej: -25.2867" step="any"/>
-    </div>
-    <div class="form-group">
-      <label>Longitud</label>
-      <input type="number" id="suc-lng" placeholder="Ej: -57.6470" step="any"/>
-    </div>
-    <div class="form-group">
-      <label>Supervisor</label>
-      <select id="suc-supervisor">
-        <option value="">Seleccioná un supervisor...</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="cerrarModalSucursal()">Cancelar</button>
-      <button class="btn-submit" onclick="guardarNuevaSucursal()">Guardar sucursal </button>
+
+    <!-- Panel masivo -->
+    <div id="suc-panel-masivo" style="display:none;">
+      <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">Subí un archivo Excel con las columnas: <b style="color:var(--text)">codigo, nombre, ciudad, lat, lng, supervisor</b></p>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--text2);">
+        <b style="color:var(--verde);">Formato requerido (primera fila = encabezados):</b><br>
+        codigo | nombre | ciudad | lat | lng | supervisor<br>
+        173 | ASUNCION CENTRO | Asunción | -25.286 | -57.598 | elias
+      </div>
+      <div class="form-group">
+        <label>Archivo Excel (.xlsx)</label>
+        <div onclick="document.getElementById('inp-excel-suc').click()" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:.2s;" id="excel-drop-zone">
+          <input type="file" id="inp-excel-suc" accept=".xlsx,.xls" style="display:none" onchange="previewExcelSucursales(event)"/>
+          <div style="font-size:28px;margin-bottom:8px;">📊</div>
+          <p style="font-size:13px;color:var(--text2);">Toca para seleccionar el archivo Excel</p>
+        </div>
+      </div>
+      <div id="excel-preview-suc" style="display:none;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text);" id="excel-preview-count"></div>
+        <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;" id="excel-preview-table"></table>
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn-cancel" onclick="cerrarModalSucursal()">Cancelar</button>
+        <button class="btn-submit" id="btn-guardar-masivo" onclick="guardarSucursalesMasivo()" disabled>Importar sucursales</button>
+      </div>
     </div>
   </div>
 </div>
@@ -671,6 +721,8 @@ function iniciarApp(){
       {label:'Plan de visitas',tab:'tab-plan'},
       {label:'Historial',tab:'tab-historial'},
       {label:'Sin visita',tab:'tab-novisitadas',color:'red'},
+      {sec:'Reportes'},
+      {label:'Hallazgos',tab:'tab-hallazgos'},
     ]);
     suscribirVisitas();
     iniciarGPS();
@@ -688,6 +740,8 @@ function iniciarApp(){
       {label:'Plan de visitas',tab:'tab-plan'},
       {label:'Historial',tab:'tab-historial'},
       {label:'Sin visita',tab:'tab-novisitadas',color:'red'},
+      {sec:'Reportes'},
+      {label:'Hallazgos',tab:'tab-hallazgos'},
     ]);
     suscribirVisitas();
     suscribirUbicaciones();
@@ -698,12 +752,16 @@ function iniciarApp(){
 // NAVEGACIÓN
 // =============================================
 function buildNav(tabs){
-  document.getElementById('nav-tabs').innerHTML=tabs.map((t,i)=>{
+  let firstTab=true;
+  document.getElementById('nav-tabs').innerHTML=tabs.map(t=>{
+    if(t.sec) return `<div class="nav-section">${t.sec}</div>`;
     let style='';
     if(t.color==='amber') style='style="color:#B45309;"';
     else if(t.color==='red') style='style="color:#A32D2D;"';
     else if(t.color==='darkred') style='style="color:#A32D2D;"';
-    return `<div class="nav-tab${i===0?' active':''}" ${style} onclick="switchTab('${t.tab}',this)" id="nav-${t.tab}">${t.label} <span id="badge-${t.tab}" style="display:none;background:currentColor;color:#fff;font-size:10px;border-radius:99px;padding:1px 6px;margin-left:3px;opacity:0.85;"></span></div>`;
+    const activeClass=firstTab?' active':'';
+    firstTab=false;
+    return `<div class="nav-tab${activeClass}" ${style} onclick="switchTab('${t.tab}',this)" id="nav-${t.tab}">${t.label} <span id="badge-${t.tab}" style="display:none;background:currentColor;color:#fff;font-size:10px;border-radius:99px;padding:1px 6px;margin-left:3px;opacity:0.85;"></span></div>`;
   }).join('');
 }
 function switchTab(id,el){
@@ -718,6 +776,7 @@ function switchTab(id,el){
   if(id==='tab-gestion') renderGestion();
   if(id==='tab-plan') renderPlanVisitas();
   if(id==='tab-novisitadas') renderNoVisitadas();
+  // tab-hallazgos: sin lógica aún
 
 }
 
@@ -1286,7 +1345,99 @@ function exportarExcel(){
 // =============================================
 // MODAL NUEVA SUCURSAL
 // =============================================
+// =============================================
+// MODAL SUCURSAL — TABS Y CARGA MASIVA
+// =============================================
+let _excelSucursalesData = [];
+
+function setSucTab(tab){
+  const esUno = tab === 'uno';
+  document.getElementById('suc-panel-uno').style.display = esUno ? 'block' : 'none';
+  document.getElementById('suc-panel-masivo').style.display = esUno ? 'none' : 'block';
+  document.getElementById('suc-tab-uno').style.cssText = esUno
+    ? 'flex:1;padding:9px;border-radius:10px;border:1px solid var(--verde);background:var(--verde-glow);color:var(--verde);font-weight:600;font-size:13px;cursor:pointer;'
+    : 'flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:500;font-size:13px;cursor:pointer;';
+  document.getElementById('suc-tab-masivo').style.cssText = !esUno
+    ? 'flex:1;padding:9px;border-radius:10px;border:1px solid var(--verde);background:var(--verde-glow);color:var(--verde);font-weight:600;font-size:13px;cursor:pointer;'
+    : 'flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:500;font-size:13px;cursor:pointer;';
+}
+
+function previewExcelSucursales(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      const wb = XLSX.read(ev.target.result, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      _excelSucursalesData = rows.map(r=>({
+        codigo: String(r.codigo||r.Codigo||r.CODIGO||'').trim(),
+        nombre: String(r.nombre||r.Nombre||r.NOMBRE||'').trim(),
+        ciudad: String(r.ciudad||r.Ciudad||r.CIUDAD||'').trim(),
+        lat:    parseFloat(r.lat||r.Lat||r.LAT||r.latitud||0),
+        lng:    parseFloat(r.lng||r.Lng||r.LNG||r.longitud||0),
+        supervisor: String(r.supervisor||r.Supervisor||r.SUPERVISOR||'').trim().toLowerCase(),
+      })).filter(r=>r.codigo && r.nombre);
+
+      if(!_excelSucursalesData.length){
+        showToast('No se encontraron filas válidas en el Excel','error'); return;
+      }
+
+      // Preview table
+      const preview = document.getElementById('excel-preview-suc');
+      const countEl = document.getElementById('excel-preview-count');
+      const tableEl = document.getElementById('excel-preview-table');
+      countEl.textContent = `${_excelSucursalesData.length} sucursales encontradas`;
+      const headers = ['codigo','nombre','ciudad','lat','lng','supervisor'];
+      tableEl.innerHTML = `
+        <thead><tr>${headers.map(h=>`<th style="padding:6px 8px;background:var(--bg2);color:var(--text2);text-align:left;font-size:11px;border-bottom:1px solid var(--border);">${h}</th>`).join('')}</tr></thead>
+        <tbody>${_excelSucursalesData.slice(0,10).map(r=>`<tr>${headers.map(h=>`<td style="padding:5px 8px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);">${r[h]}</td>`).join('')}</tr>`).join('')}
+        ${_excelSucursalesData.length>10?`<tr><td colspan="6" style="padding:6px 8px;font-size:11px;color:var(--text2);text-align:center;">... y ${_excelSucursalesData.length-10} más</td></tr>`:''}
+        </tbody>`;
+      preview.style.display = 'block';
+      document.getElementById('btn-guardar-masivo').disabled = false;
+      document.getElementById('excel-drop-zone').style.borderColor = 'var(--verde)';
+    } catch(err){
+      showToast('Error leyendo el Excel: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function guardarSucursalesMasivo(){
+  if(!_excelSucursalesData.length){showToast('No hay datos para importar','error');return;}
+  const btn = document.getElementById('btn-guardar-masivo');
+  btn.disabled = true;
+  btn.textContent = 'Importando...';
+  let ok=0, errores=0;
+  for(const r of _excelSucursalesData){
+    if(SUCS[r.codigo]){errores++;continue;}
+    SUCS[r.codigo] = {id:r.codigo, nombre:`${r.codigo} - ${r.nombre}`, ciudad:r.ciudad, lat:r.lat, lng:r.lng};
+    if(SUPS[r.supervisor] && !SUPS[r.supervisor].sucursales.includes(r.codigo)){
+      SUPS[r.supervisor].sucursales.push(r.codigo);
+    }
+    if(window._fb){
+      const {db,ref,set}=window._fb;
+      try{
+        await set(ref(db,`sucursales/${r.codigo}`),{id:r.codigo,nombre:`${r.codigo} - ${r.nombre}`,ciudad:r.ciudad,lat:r.lat,lng:r.lng,supId:r.supervisor});
+        ok++;
+      }catch(e){errores++;}
+    } else { ok++; }
+  }
+  cerrarModalSucursal();
+  showToast(`✅ ${ok} sucursales importadas${errores>0?' · '+errores+' omitidas (código duplicado)':''}`);
+  btn.disabled = false;
+  btn.textContent = 'Importar sucursales';
+}
+
 function abrirModalSucursal(){
+  setSucTab('uno');
+  _excelSucursalesData=[];
+  document.getElementById('excel-preview-suc').style.display='none';
+  document.getElementById('btn-guardar-masivo').disabled=true;
+  document.getElementById('inp-excel-suc').value='';
+  document.getElementById('excel-drop-zone').style.borderColor='';
   // Poblar select de supervisores
   const sel = document.getElementById('suc-supervisor');
   sel.innerHTML = '<option value="">Seleccioná un supervisor...</option>' +
