@@ -660,8 +660,6 @@ function logout(){
 function iniciarApp(){
   const sup=SUPS[S.uid];
   if(S.role==='supervisor'){
-    document.getElementById('user-avatar').textContent=sup.av;
-    document.getElementById('user-avatar').style.background=sup.color;
     document.getElementById('user-name-display').textContent=sup.nombre;
     document.getElementById('user-role-display').textContent=sup.zona;
     buildNav([
@@ -677,9 +675,7 @@ function iniciarApp(){
     suscribirVisitas();
     iniciarGPS();
   } else {
-    document.getElementById('user-avatar').textContent='';
-    document.getElementById('user-avatar').style.background='var(--card2)';
-    document.getElementById('user-avatar').style.fontSize='18px';
+
     document.getElementById('user-name-display').textContent='Corporativo';
     document.getElementById('user-role-display').textContent='Vista general';
     document.getElementById('btn-add-suc').style.display='flex';
