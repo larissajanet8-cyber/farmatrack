@@ -829,7 +829,7 @@ function switchTab(id,el){
   if(id==='tab-gestion') renderGestion();
   if(id==='tab-plan') renderPlanVisitas();
   if(id==='tab-novisitadas') renderNoVisitadas();
-  if(id==='tab-visitas-ventas' && _ventasData.length) renderVentasVentas(_ventasData);
+  if(id==='tab-visitas-ventas' && _ventasData.length) renderVentasVentas();
   // tab-hallazgos: sin lógica aún
 
 }
@@ -1714,7 +1714,7 @@ function renderPlanSup(semana, abierto, contenido){
     </div>`;
 
     if(planSucs.length === 0 && abierto){
-      html += `<div class="empty"><div class="empty-icon"></div><h3>Sin plan cargado</h3><p>Cargá tu plan antes del lunes 23:59</p></div>`;
+      html += `<div class="empty"><div class="empty-icon"></div><h3>Sin plan cargado</h3><p>Cargá tu plan antes del viernes 23:59</p></div>`;
     } else {
       html += `<div class="plan-stats">
         <div class="plan-stat">
@@ -2233,7 +2233,7 @@ document.getElementById('input-admin').addEventListener('keydown',e=>{if(e.key==
 let _ventasData = [];
 
 function abrirImportVentas(){
-  _ventasData = [];
+  // No borrar datos existentes — solo abrir modal para reimportar
   document.getElementById('ventas-preview-wrap').style.display = 'none';
   document.getElementById('btn-cargar-ventas').disabled = true;
   document.getElementById('inp-excel-ventas').value = '';
@@ -2253,39 +2253,37 @@ function previewExcelVentas(e){
       const wb = XLSX.read(ev.target.result, {type:'array'});
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
-
-      // Normalizar nombres de columna (case-insensitive, espacios)
       const norm = s => String(s).trim().toUpperCase().replace(/\s+/g,' ');
-      _ventasData = rows.map(r=>{
+      const parsed = rows.map(r=>{
         const rn = {};
         Object.keys(r).forEach(k=>{ rn[norm(k)] = r[k]; });
         return {
-          codSucursal:  String(rn['COD SUCURSAL'] || rn['CODIGO'] || rn['COD'] || '').trim(),
+          codSucursal:    String(rn['COD SUCURSAL'] || rn['CODIGO'] || rn['COD'] || '').trim(),
           nombreSucursal: String(rn['NOMBRE SUCURSAL'] || rn['NOMBRE'] || '').trim(),
-          unidades:     Number(rn['UNIDADES'] || 0),
-          valores:      Number(rn['VALORES'] || 0),
-          mes:          String(rn['MES'] || '').trim(),
-          anio:         String(rn['AÑO'] || rn['ANO'] || rn['YEAR'] || '').trim(),
-          supervisor:   String(rn['SUPERVISOR'] || '').trim().toLowerCase(),
+          unidades:       Math.round(Number(rn['UNIDADES'] || 0)),
+          valores:        Math.round(Number(rn['VALORES'] || 0)),
+          mes:            String(rn['MES'] || '').trim().toLowerCase(),
+          anio:           String(rn['AÑO'] || rn['ANO'] || rn['YEAR'] || '').trim(),
+          supervisor:     String(rn['SUPERVISOR'] || '').trim().toLowerCase(),
         };
       }).filter(r => r.codSucursal || r.nombreSucursal);
 
-      if(!_ventasData.length){
-        showToast('No se encontraron filas válidas en el Excel','error'); return;
-      }
+      if(!parsed.length){ showToast('No se encontraron filas válidas en el Excel','error'); return; }
 
-      // Preview
-      const cols = ['codSucursal','nombreSucursal','unidades','valores','mes','anio','supervisor'];
-      const labels = ['Cód.','Nombre','Unidades','Valores','Mes','Año','Supervisor'];
-      document.getElementById('ventas-preview-count').textContent = `${_ventasData.length} registros encontrados`;
+      const cols = ['nombreSucursal','unidades','valores','mes','anio','supervisor'];
+      const labels = ['Sucursal','Unidades','Valores','Mes','Año','Supervisor'];
+      document.getElementById('ventas-preview-count').textContent = `${parsed.length} registros encontrados`;
+      const fmt = n => Math.round(n).toLocaleString('es');
       document.getElementById('ventas-preview-table').innerHTML = `
         <thead><tr>${labels.map(h=>`<th style="padding:5px 7px;background:var(--bg2);color:var(--text2);text-align:left;font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap;">${h}</th>`).join('')}</tr></thead>
-        <tbody>${_ventasData.slice(0,12).map(r=>`<tr>${cols.map(c=>`<td style="padding:4px 7px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);white-space:nowrap;">${r[c]}</td>`).join('')}</tr>`).join('')}
-        ${_ventasData.length>12?`<tr><td colspan="7" style="padding:5px 7px;font-size:11px;color:var(--text2);text-align:center;">... y ${_ventasData.length-12} más</td></tr>`:''}
+        <tbody>${parsed.slice(0,10).map(r=>`<tr>${cols.map(c=>`<td style="padding:4px 7px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);white-space:nowrap;">${(c==='unidades'||c==='valores')?fmt(r[c]):r[c]}</td>`).join('')}</tr>`).join('')}
+        ${parsed.length>10?`<tr><td colspan="6" style="padding:5px 7px;font-size:11px;color:var(--text2);text-align:center;">... y ${parsed.length-10} más</td></tr>`:''}
         </tbody>`;
       document.getElementById('ventas-preview-wrap').style.display = 'block';
       document.getElementById('btn-cargar-ventas').disabled = false;
       document.getElementById('ventas-drop-zone').style.borderColor = 'var(--verde)';
+      // Guardar temporalmente para confirmar
+      document.getElementById('btn-cargar-ventas')._parsed = parsed;
     } catch(err){
       showToast('Error leyendo el Excel: ' + err.message, 'error');
     }
@@ -2294,60 +2292,154 @@ function previewExcelVentas(e){
 }
 
 function cargarVentasDesdeExcel(){
-  if(!_ventasData.length) return;
+  const parsed = document.getElementById('btn-cargar-ventas')._parsed;
+  if(!parsed || !parsed.length) return;
+  _ventasData = parsed;
   cerrarImportVentas();
-  renderVentasVentas(_ventasData);
+  renderVentasVentas();
   showToast(`✅ ${_ventasData.length} registros de ventas cargados`);
 }
 
-function renderVentasVentas(datos){
-  // Agrupar por mes/año para mostrar resumen
-  const grupos = {};
-  datos.forEach(r=>{
-    const key = `${r.mes} ${r.anio}`;
-    if(!grupos[key]) grupos[key]={mes:r.mes, anio:r.anio, unidades:0, valores:0, sucursales:new Set()};
-    grupos[key].unidades += r.unidades;
-    grupos[key].valores  += r.valores;
-    grupos[key].sucursales.add(r.codSucursal);
-  });
+// ── Filtros activos ────────────────────────────────────────────────────────
+let _vvFiltros = { anio:'', mes:'', supervisor:'', sucursal:'' };
 
-  const totalUnidades = datos.reduce((s,r)=>s+r.unidades,0);
-  const totalValores  = datos.reduce((s,r)=>s+r.valores,0);
+function setFiltroVV(campo, val){
+  _vvFiltros[campo] = val;
+  renderTablaVV();
+}
 
-  const fmt = n => n.toLocaleString('es');
+function renderVentasVentas(){
+  if(!_ventasData.length) return;
+
+  // Opciones únicas para filtros
+  const anios       = [...new Set(_ventasData.map(r=>r.anio))].sort();
+  const meses       = [...new Set(_ventasData.map(r=>r.mes))];
+  const supervisores= [...new Set(_ventasData.map(r=>r.supervisor))].sort();
+  const sucursales  = [...new Set(_ventasData.map(r=>r.nombreSucursal))].sort();
+
+  const selStyle = `background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:8px 12px;outline:none;cursor:pointer;min-width:130px;`;
 
   const contenido = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;">
-      <div class="stat-card verde"><div class="stat-num" style="color:var(--verde)">${datos.length}</div><div class="stat-label">Registros cargados</div></div>
-      <div class="stat-card azul"><div class="stat-num" style="color:var(--azul)">${fmt(totalUnidades)}</div><div class="stat-label">Total unidades</div></div>
-      <div class="stat-card amarillo"><div class="stat-num" style="color:var(--amarillo);font-size:18px;">₲ ${fmt(totalValores)}</div><div class="stat-label">Total valores</div></div>
-      <div class="stat-card rojo"><div class="stat-num" style="color:var(--rojo)">${Object.keys(grupos).length}</div><div class="stat-label">Períodos</div></div>
+    <!-- Filtros + botón reimportar -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:20px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:14px;">
+      <select style="${selStyle}" onchange="setFiltroVV('anio',this.value)">
+        <option value="">Todos los años</option>
+        ${anios.map(a=>`<option value="${a}" ${_vvFiltros.anio===a?'selected':''}>${a}</option>`).join('')}
+      </select>
+      <select style="${selStyle}" onchange="setFiltroVV('mes',this.value)">
+        <option value="">Todos los meses</option>
+        ${meses.map(m=>`<option value="${m}" ${_vvFiltros.mes===m?'selected':''}>${m.charAt(0).toUpperCase()+m.slice(1)}</option>`).join('')}
+      </select>
+      <select style="${selStyle}" onchange="setFiltroVV('supervisor',this.value)">
+        <option value="">Todos los supervisores</option>
+        ${supervisores.map(s=>`<option value="${s}" ${_vvFiltros.supervisor===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+      </select>
+      <select style="${selStyle}" onchange="setFiltroVV('sucursal',this.value)">
+        <option value="">Todas las sucursales</option>
+        ${sucursales.map(s=>`<option value="${s}" ${_vvFiltros.sucursal===s?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <button onclick="abrirImportVentas()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;">🔄 Reimportar</button>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-      <h3 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">Detalle por sucursal</h3>
-      <button onclick="abrirImportVentas()" style="display:inline-flex;align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:12px;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;">🔄 Reimportar</button>
-    </div>
+    <!-- Tabla comparativa -->
+    <div id="tabla-vv-wrap"></div>
+  `;
+
+  document.getElementById('ventas-contenido').innerHTML = contenido;
+  renderTablaVV();
+}
+
+function renderTablaVV(){
+  if(!_ventasData.length) return;
+  const f = _vvFiltros;
+  const fmt = n => Math.round(n).toLocaleString('es');
+
+  // Filtrar datos de ventas
+  const datosFilt = _ventasData.filter(r =>
+    (!f.anio       || r.anio === f.anio) &&
+    (!f.mes        || r.mes  === f.mes) &&
+    (!f.supervisor || r.supervisor === f.supervisor) &&
+    (!f.sucursal   || r.nombreSucursal === f.sucursal)
+  );
+
+  // Construir filas: una por combinación supervisor+sucursal (sumando si hay varios meses)
+  const mapaFilas = {};
+  datosFilt.forEach(r => {
+    const key = `${r.supervisor}||${r.codSucursal}||${r.nombreSucursal}`;
+    if(!mapaFilas[key]) mapaFilas[key] = {supervisor:r.supervisor, sucursal:r.nombreSucursal, codSuc:r.codSucursal, unidades:0, valores:0};
+    mapaFilas[key].unidades += r.unidades;
+    mapaFilas[key].valores  += r.valores;
+  });
+
+  const filas = Object.values(mapaFilas).sort((a,b)=>a.supervisor.localeCompare(b.supervisor)||a.sucursal.localeCompare(b.sucursal));
+
+  // Contar visitas desde S.visitas cruzando por codSucursal
+  const visitasMes = Object.values(S.visitas || {});
+  // Si hay filtro de mes/año, filtrar visitas también
+  const mesNombres = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+  function visitasDeSucursal(codSuc, supId){
+    return visitasMes.filter(v => {
+      if(String(v.sucId) !== String(codSuc)) return false;
+      if(supId && v.supId !== supId) return false;
+      if(!v.entrada) return false;
+      const d = new Date(v.entrada);
+      const mesNum = f.mes ? mesNombres[f.mes] : null;
+      const anioNum = f.anio ? parseInt(f.anio) : null;
+      if(mesNum && d.getMonth()+1 !== mesNum) return false;
+      if(anioNum && d.getFullYear() !== anioNum) return false;
+      return true;
+    }).length;
+  }
+
+  if(!filas.length){
+    document.getElementById('tabla-vv-wrap').innerHTML = `<div style="text-align:center;padding:40px;color:var(--text2);"><div style="font-size:32px;margin-bottom:8px;">🔍</div><p>Sin resultados con los filtros aplicados</p></div>`;
+    return;
+  }
+
+  const supColors = {};
+  Object.entries(SUPS).forEach(([id,s])=>{ supColors[id]=s.color; });
+  const getSupColor = sup => {
+    const entry = Object.entries(SUPS).find(([,s])=>s.nombre.toLowerCase()===sup);
+    return entry ? entry[1].color : 'var(--text2)';
+  };
+
+  const totUni = filas.reduce((s,r)=>s+r.unidades,0);
+  const totVal = filas.reduce((s,r)=>s+r.valores,0);
+  const totVis = filas.reduce((s,r)=>s+visitasDeSucursal(r.codSuc, r.supervisor),0);
+
+  document.getElementById('tabla-vv-wrap').innerHTML = `
+    <div style="margin-bottom:8px;font-size:13px;color:var(--text2);">${filas.length} sucursales</div>
     <div class="tabla-wrap">
       <table>
         <thead><tr>
-          <th>Cód.</th><th>Sucursal</th><th>Supervisor</th><th>Mes</th><th>Año</th>
-          <th style="text-align:right;">Unidades</th><th style="text-align:right;">Valores</th>
+          <th>Supervisor</th>
+          <th>Sucursal</th>
+          <th style="text-align:right;">Unidades</th>
+          <th style="text-align:right;">Valores (₲)</th>
+          <th style="text-align:center;">Visitas periodo</th>
         </tr></thead>
         <tbody>
-          ${datos.map(r=>`<tr>
-            <td style="color:var(--text2);font-size:12px;">${r.codSucursal}</td>
-            <td>${r.nombreSucursal}</td>
-            <td style="font-size:12px;color:var(--text2);">${r.supervisor}</td>
-            <td style="font-size:12px;">${r.mes}</td>
-            <td style="font-size:12px;">${r.anio}</td>
-            <td style="text-align:right;color:var(--azul);">${fmt(r.unidades)}</td>
-            <td style="text-align:right;color:var(--amarillo);">₲ ${fmt(r.valores)}</td>
-          </tr>`).join('')}
+          ${filas.map(r=>{
+            const vis = visitasDeSucursal(r.codSuc, r.supervisor);
+            const color = getSupColor(r.supervisor);
+            return `<tr>
+              <td><b style="color:${color}">${r.supervisor.charAt(0).toUpperCase()+r.supervisor.slice(1)}</b></td>
+              <td style="font-size:13px;">${r.sucursal}</td>
+              <td style="text-align:right;color:var(--azul);">${fmt(r.unidades)}</td>
+              <td style="text-align:right;color:var(--amarillo);">${fmt(r.valores)}</td>
+              <td style="text-align:center;">
+                <span style="display:inline-block;background:${vis>0?'rgba(0,200,150,.15)':'var(--bg3)'};color:${vis>0?'var(--verde)':'var(--text3)'};border-radius:20px;padding:2px 10px;font-size:13px;font-weight:600;">${vis}</span>
+              </td>
+            </tr>`;
+          }).join('')}
+          <tr style="background:var(--card2);font-weight:700;">
+            <td colspan="2" style="color:var(--text2);font-size:12px;">TOTAL</td>
+            <td style="text-align:right;color:var(--azul);">${fmt(totUni)}</td>
+            <td style="text-align:right;color:var(--amarillo);">${fmt(totVal)}</td>
+            <td style="text-align:center;color:var(--verde);">${totVis}</td>
+          </tr>
         </tbody>
       </table>
     </div>`;
-
-  document.getElementById('ventas-contenido').innerHTML = contenido;
 }
 
 </script>
