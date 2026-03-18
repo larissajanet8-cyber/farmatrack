@@ -104,6 +104,8 @@
   .btn-logout{width:100%;padding:9px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:8px;font-size:12px;cursor:pointer;transition:.2s;font-family:'DM Sans',sans-serif;}
   .btn-logout:hover{border-color:var(--rojo);color:var(--rojo);}
   .hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;width:38px;height:38px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;font-size:18px;}
+  .sidebar-close-btn{display:none;background:transparent;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:2px 6px;margin-left:auto;line-height:1;}
+  @media(max-width:768px){.sidebar-close-btn{display:block;}}
   .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;}
   .main-content{margin-left:230px;flex:1;min-height:100vh;}
   .tab-content{display:none;padding:24px;max-width:1200px;}
@@ -116,6 +118,17 @@
     .sidebar-overlay.open{display:block;}
     .tab-content{padding:14px;padding-top:60px;}
   }
+
+  /* SEARCHABLE DROPDOWN */
+  .sd-wrap{position:relative;min-width:130px;}
+  .sd-input{width:100%;padding:8px 30px 8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;}
+  .sd-input:focus{border-color:var(--verde);}
+  .sd-arrow{position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text2);font-size:11px;}
+  .sd-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card2);border:1px solid var(--border);border-radius:8px;z-index:500;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);display:none;}
+  .sd-list.open{display:block;}
+  .sd-item{padding:8px 12px;font-size:13px;cursor:pointer;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sd-item:hover,.sd-item.selected{background:var(--verde-glow);color:var(--verde);}
+  .sd-item.empty{color:var(--text3);font-style:italic;}
 
   /* STATS */
   .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;}
@@ -311,7 +324,14 @@
 <div id="login-screen" style="display:none">
   <div class="login-wrap">
     <div class="logo-area">
-      <div class="logo-icon"></div>
+      <div class="logo-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="3" y="9" width="16" height="4" rx="2" fill="white" opacity="0.3"/>
+  <rect x="1" y="7" width="9" height="8" rx="4" fill="white" opacity="0.95"/>
+  <rect x="12" y="7" width="9" height="8" rx="4" fill="white" opacity="0.6"/>
+  <rect x="10.5" y="7" width="1" height="8" fill="white" opacity="0.4"/>
+</svg>
+      </div>
       <div class="logo-title">Farma<span>Track</span></div>
       <div class="logo-sub">Sistema de visitas y geolocalización en tiempo real</div>
     </div>
@@ -348,9 +368,15 @@
   <div class="sidebar" id="sidebar">
     <div class="sidebar-brand">
       <div class="sidebar-brand-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="3" y="9" width="16" height="4" rx="2" fill="white" opacity="0.3"/>
+  <rect x="1" y="7" width="9" height="8" rx="4" fill="white" opacity="0.95"/>
+  <rect x="12" y="7" width="9" height="8" rx="4" fill="white" opacity="0.6"/>
+  <rect x="10.5" y="7" width="1" height="8" fill="white" opacity="0.4"/>
+</svg>
       </div>
       <div class="sidebar-brand-name">Farma<span>Track</span></div>
+      <button class="sidebar-close-btn" onclick="toggleSidebar()" title="Cerrar menú">✕</button>
     </div>
     <div class="sidebar-user">
       <div class="sidebar-user-name" id="user-name-display">-</div>
@@ -376,7 +402,10 @@
     </div>
     <div class="section-header">
       <h3>Mis visitas de hoy</h3>
-      <button class="btn-primary" onclick="abrirModal()">＋ Registrar visita</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:13px;padding:8px 14px;border-radius:10px;cursor:pointer;" onclick="abrirModalSucursal()">＋ Sucursal</button>
+        <button class="btn-primary" onclick="abrirModal()">＋ Registrar visita</button>
+      </div>
     </div>
     <div class="visitas-list" id="visitas-hoy">
       <div class="empty"><div class="empty-icon">️</div><h3>Sin visitas registradas</h3><p>Toca "Registrar visita" para comenzar tu jornada</p></div>
@@ -475,7 +504,7 @@
   <div class="tab-content" id="tab-visitas-ventas">
     <div class="section-header" style="margin-bottom:20px;">
       <h3>Visitas vs. Ventas</h3>
-      <button onclick="abrirImportVentas()" style="display:inline-flex;align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;">📊 Importar Excel</button>
+      <button id="btn-importar-ventas-header" onclick="abrirImportVentas()" style="display:none;align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;">📊 Importar Excel</button>
     </div>
     <div id="ventas-contenido">
       <div style="text-align:center;padding:60px 20px;color:var(--text2);">
@@ -784,6 +813,7 @@ function iniciarApp(){
     document.getElementById('user-name-display').textContent='Corporativo';
     document.getElementById('user-role-display').textContent='Vista general';
     document.getElementById('btn-add-suc').style.display='flex';
+    document.getElementById('btn-importar-ventas-header').style.display='inline-flex';
     buildNav([
       {sec:'Principal'},
       {label:'Dashboard',tab:'tab-dashboard'},
@@ -854,10 +884,8 @@ function suscribirVentas(){
       const k = `${r.supervisor}||${r.nombreSucursal}||${r.mes}||${r.anio}`;
       if(!mapa[k]){
         mapa[k] = {...r, valores: Math.round(r.valores||0), unidades: Math.round(r.unidades||0)};
-      } else {
-        mapa[k].valores  += Math.round(r.valores||0);
-        mapa[k].unidades += Math.round(r.unidades||0);
       }
+      // Si ya existe la clave, ignorar duplicado
     });
     _ventasData = Object.values(mapa);
     console.log('[VentasDB] Cargado desde Firebase:', _ventasData.length, 'registros únicos');
@@ -2257,6 +2285,63 @@ async function renderGestion(){
 document.getElementById('input-admin').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
 
 // =============================================
+// SEARCHABLE DROPDOWN HELPER
+// =============================================
+function createSD(id, placeholder, options, currentVal, onChange){
+  const val = currentVal || '';
+  const label = val ? options.find(o=>o.value===val)?.label || val : '';
+  return `<div class="sd-wrap" id="sd-wrap-${id}">
+    <input class="sd-input" id="sd-input-${id}" type="text"
+      placeholder="${placeholder}"
+      value="${label}"
+      autocomplete="off"
+      onfocus="openSD('${id}')"
+      oninput="filterSD('${id}','${onChange}')"
+      onblur="blurSD('${id}','${onChange}')"
+    />
+    <span class="sd-arrow">▾</span>
+    <div class="sd-list" id="sd-list-${id}">
+      ${[{value:'',label:placeholder},...options].map(o=>`
+        <div class="sd-item${o.value===val?' selected':''}"
+          data-value="${o.value}"
+          data-label="${o.label}"
+          onmousedown="selectSD('${id}','${o.value}','${o.label}','${onChange}')">
+          ${o.label || '<em>'+placeholder+'</em>'}
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+function openSD(id){
+  document.getElementById('sd-list-'+id).classList.add('open');
+  document.getElementById('sd-input-'+id).select();
+}
+function blurSD(id, onChange){
+  setTimeout(()=>{
+    const list = document.getElementById('sd-list-'+id);
+    if(list) list.classList.remove('open');
+  }, 200);
+}
+function filterSD(id, onChange){
+  const q = document.getElementById('sd-input-'+id).value.toLowerCase();
+  const items = document.querySelectorAll('#sd-list-'+id+' .sd-item');
+  let any=false;
+  items.forEach(item=>{
+    const txt = item.dataset.label.toLowerCase();
+    const show = txt.includes(q);
+    item.style.display = show ? '' : 'none';
+    if(show) any=true;
+  });
+  document.getElementById('sd-list-'+id).classList.add('open');
+}
+function selectSD(id, value, label, onChange){
+  document.getElementById('sd-input-'+id).value = value ? label : '';
+  document.getElementById('sd-list-'+id).classList.remove('open');
+  // Call the onChange function with the field and value
+  const parts = onChange.split('|');
+  setFiltroVV(parts[0], value);
+}
+
+// =============================================
 // VISITAS VS. VENTAS
 // =============================================
 let _ventasData = [];
@@ -2342,19 +2427,17 @@ function cargarVentasDesdeExcel(){
   const parsed = document.getElementById('btn-cargar-ventas')._parsed;
   if(!parsed || !parsed.length) return;
   // Garantizar que valores y unidades sean enteros al almacenar
-  // Pre-agregar: colapsar filas duplicadas con mismo supervisor+sucursal+mes+año
+  // Deduplicar: quedarse con la PRIMERA fila de cada combinación supervisor+sucursal+mes+año
   const _mapa = {};
   parsed.forEach(r => {
     const k = `${r.supervisor}||${r.nombreSucursal}||${r.mes}||${r.anio}`;
     if(!_mapa[k]){
       _mapa[k] = {...r, valores: Math.round(r.valores), unidades: Math.round(r.unidades)};
-    } else {
-      _mapa[k].valores  += Math.round(r.valores);
-      _mapa[k].unidades += Math.round(r.unidades);
     }
+    // Si ya existe, ignorar — son duplicados del Excel
   });
   _ventasData = Object.values(_mapa);
-  console.log('[VentasDebug] registros tras colapsar duplicados:', _ventasData.length, '(original:', parsed.length, ')');
+  console.log('[VentasDebug] registros únicos:', _ventasData.length, '(filas originales:', parsed.length, ')');
   cerrarImportVentas();
   renderVentasVentas();
   showToast(`✅ ${_ventasData.length} registros de ventas cargados`);
@@ -2394,30 +2477,16 @@ function renderVentasVentas(){
   const supervisores= [...new Set(_ventasData.map(r=>r.supervisor))].sort();
   const sucursales  = [...new Set(_ventasData.map(r=>r.nombreSucursal))].sort();
 
-  const selStyle = `background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:8px 12px;outline:none;cursor:pointer;min-width:130px;`;
-
   const contenido = `
     <!-- Filtros + botón reimportar -->
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:20px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:14px;">
-      <select style="${selStyle}" onchange="setFiltroVV('anio',this.value)">
-        <option value="">Todos los años</option>
-        ${anios.map(a=>`<option value="${a}" ${_vvFiltros.anio===a?'selected':''}>${a}</option>`).join('')}
-      </select>
-      <select style="${selStyle}" onchange="setFiltroVV('mes',this.value)">
-        <option value="">Todos los meses</option>
-        ${meses.map(m=>`<option value="${m}" ${_vvFiltros.mes===m?'selected':''}>${m.charAt(0).toUpperCase()+m.slice(1)}</option>`).join('')}
-      </select>
-      <select style="${selStyle}" onchange="setFiltroVV('supervisor',this.value)">
-        <option value="">Todos los supervisores</option>
-        ${supervisores.map(s=>`<option value="${s}" ${_vvFiltros.supervisor===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
-      </select>
-      <select style="${selStyle}" onchange="setFiltroVV('sucursal',this.value)">
-        <option value="">Todas las sucursales</option>
-        ${sucursales.map(s=>`<option value="${s}" ${_vvFiltros.sucursal===s?'selected':''}>${s}</option>`).join('')}
-      </select>
+      ${createSD('vv-anio','Todos los años',anios.map(a=>({value:a,label:a})),_vvFiltros.anio,'anio|')}
+      ${createSD('vv-mes','Todos los meses',meses.map(m=>({value:m,label:m.charAt(0).toUpperCase()+m.slice(1)})),_vvFiltros.mes,'mes|')}
+      ${createSD('vv-sup','Todos los supervisores',supervisores.map(s=>({value:s,label:s.charAt(0).toUpperCase()+s.slice(1)})),_vvFiltros.supervisor,'supervisor|')}
+      ${createSD('vv-suc','Todas las sucursales',sucursales.map(s=>({value:s,label:s})),_vvFiltros.sucursal,'sucursal|')}
       <div style="margin-left:auto;display:flex;gap:8px;">
-        <button onclick="vaciarVentas()" style="display:inline-flex;align-items:center;gap:6px;background:transparent;color:var(--rojo);border:1px solid var(--rojo);font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;cursor:pointer;">🗑 Vaciar datos</button>
-        <button onclick="abrirImportVentas()" style="display:inline-flex;align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;">🔄 Reimportar</button>
+        <button onclick="vaciarVentas()" style="display:${S.role==='corporativo'?'inline-flex':'none'};align-items:center;gap:6px;background:transparent;color:var(--rojo);border:1px solid var(--rojo);font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;cursor:pointer;">🗑 Vaciar datos</button>
+        <button onclick="abrirImportVentas()" style="display:${S.role==='corporativo'?'inline-flex':'none'};align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;">🔄 Reimportar</button>
       </div>
     </div>
     <!-- Tabla comparativa -->
@@ -2553,7 +2622,7 @@ function renderTablaVV(){
             return `<tr>
               <td><b style="color:${color}">${r.supervisor.charAt(0).toUpperCase()+r.supervisor.slice(1)}</b></td>
               <td style="font-size:13px;">${r.sucursal}</td>
-              <td style="text-align:right;color:var(--amarillo);">${fmt(r.vAct)}</td>
+              <td style="text-align:right;color:var(--text);">${fmt(r.vAct)}</td>
               <td style="text-align:right;color:var(--text2);">${fmt(r.vAnt)}</td>
               <td style="text-align:right;color:${difColor(r.difV)};font-weight:600;">${difPrefix(r.difV)}${fmt(r.difV)}</td>
               <td style="text-align:center;">
@@ -2565,7 +2634,7 @@ function renderTablaVV(){
           }).join('')}
           <tr style="background:var(--card2);font-weight:700;border-top:2px solid var(--border);">
             <td colspan="2" style="color:var(--text2);font-size:12px;">TOTAL</td>
-            <td style="text-align:right;color:var(--amarillo);">${fmt(totVAct)}</td>
+            <td style="text-align:right;color:var(--text);">${fmt(totVAct)}</td>
             <td style="text-align:right;color:var(--text2);">${fmt(totVAnt)}</td>
             <td style="text-align:right;color:${difColor(totDifV)};font-weight:700;">${difPrefix(totDifV)}${fmt(totDifV)}</td>
             <td style="text-align:center;color:var(--verde);">${totVisAct}</td>
