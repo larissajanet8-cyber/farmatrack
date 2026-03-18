@@ -2309,27 +2309,26 @@ document.getElementById('input-admin').addEventListener('keydown',e=>{if(e.key==
 // =============================================
 function createSD(id, placeholder, options, currentVal, onChange){
   const val = currentVal || '';
-  const label = val ? options.find(o=>o.value===val)?.label || val : '';
-  return `<div class="sd-wrap" id="sd-wrap-${id}">
-    <input class="sd-input" id="sd-input-${id}" type="text"
-      placeholder="${placeholder}"
-      value="${label}"
-      autocomplete="off"
-      onfocus="openSD('${id}')"
-      oninput="filterSD('${id}','${onChange}')"
-      onblur="blurSD('${id}','${onChange}')"
-    />
-    <span class="sd-arrow">▾</span>
-    <div class="sd-list" id="sd-list-${id}">
-      ${[{value:'',label:placeholder},...options].map(o=>`
-        <div class="sd-item${o.value===val?' selected':''}"
-          data-value="${o.value}"
-          data-label="${o.label}"
-          onmousedown="selectSD('${id}','${o.value}','${o.label}','${onChange}')">
-          ${o.label || '<em>'+placeholder+'</em>'}
-        </div>`).join('')}
-    </div>
-  </div>`;
+  const found = options.find(function(o){return o.value===val;});
+  const label = val && found ? found.label : '';
+  const allOpts = [{value:'',label:''}].concat(options);
+  const items = allOpts.map(function(o){
+    const sel = o.value===val ? ' selected' : '';
+    const display = o.value ? o.label : ('<span style="color:var(--text3);font-style:italic;">'+placeholder+'</span>');
+    return '<div class="sd-item'+sel+'" data-value="'+o.value+'" data-label="'+o.label+'" onmousedown="selectSD(\''+id+'\',\''+o.value.replace(/'/g,"\\'")+'\',\''+o.label.replace(/'/g,"\\'")+'\',\''+onChange+'\')">'+display+'</div>';
+  }).join('');
+  return '<div class="sd-wrap" id="sd-wrap-'+id+'">'
+    +'<input class="sd-input" id="sd-input-'+id+'" type="text"'
+    +' placeholder="'+placeholder+'"'
+    +' value="'+label+'"'
+    +' autocomplete="off"'
+    +' onfocus="openSD(\''+id+'\')"'
+    +' oninput="filterSD(\''+id+'\',\''+onChange+'\')"'
+    +' onblur="blurSD(\''+id+'\',\''+onChange+'\')"'
+    +'/>'
+    +'<span class="sd-arrow">▾</span>'
+    +'<div class="sd-list" id="sd-list-'+id+'">'+items+'</div>'
+    +'</div>';
 }
 function openSD(id){
   document.getElementById('sd-list-'+id).classList.add('open');
@@ -2497,21 +2496,20 @@ function renderVentasVentas(){
   const supervisores= [...new Set(_ventasData.map(r=>r.supervisor))].sort();
   const sucursales  = [...new Set(_ventasData.map(r=>r.nombreSucursal))].sort();
 
-  const contenido = `
-    <!-- Filtros + botón reimportar -->
-    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:20px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:14px;">
-      ${createSD('vv-anio','Todos los años',anios.map(a=>({value:a,label:a})),_vvFiltros.anio,'anio|')}
-      ${createSD('vv-mes','Todos los meses',meses.map(m=>({value:m,label:m.charAt(0).toUpperCase()+m.slice(1)})),_vvFiltros.mes,'mes|')}
-      ${createSD('vv-sup','Todos los supervisores',supervisores.map(s=>({value:s,label:s.charAt(0).toUpperCase()+s.slice(1)})),_vvFiltros.supervisor,'supervisor|')}
-      ${createSD('vv-suc','Todas las sucursales',sucursales.map(s=>({value:s,label:s})),_vvFiltros.sucursal,'sucursal|')}
-      <div style="margin-left:auto;display:flex;gap:8px;">
-        <button onclick="vaciarVentas()" style="display:${S.role==='corporativo'?'inline-flex':'none'};align-items:center;gap:6px;background:transparent;color:var(--rojo);border:1px solid var(--rojo);font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;cursor:pointer;">🗑 Vaciar datos</button>
-        <button onclick="abrirImportVentas()" style="display:${S.role==='corporativo'?'inline-flex':'none'};align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;">🔄 Reimportar</button>
-      </div>
-    </div>
-    <!-- Tabla comparativa -->
-    <div id="tabla-vv-wrap"></div>
-  `;
+  // Construir filtros fuera del template para evitar conflictos con backticks
+  const sdAnio = createSD('vv-anio','Todos los años',anios.map(function(a){return {value:a,label:a};}),_vvFiltros.anio,'anio|');
+  const sdMes  = createSD('vv-mes','Todos los meses',meses.map(function(m){return {value:m,label:m.charAt(0).toUpperCase()+m.slice(1)};}),_vvFiltros.mes,'mes|');
+  const sdSup  = createSD('vv-sup','Todos los supervisores',supervisores.map(function(s){return {value:s,label:s.charAt(0).toUpperCase()+s.slice(1)};}),_vvFiltros.supervisor,'supervisor|');
+  const sdSuc  = createSD('vv-suc','Todas las sucursales',sucursales.map(function(s){return {value:s,label:s};}),_vvFiltros.sucursal,'sucursal|');
+  const btnRole = S.role==='corporativo' ? 'inline-flex' : 'none';
+
+  const contenido = '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:20px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:14px;">'
+    + sdAnio + sdMes + sdSup + sdSuc
+    + '<div style="margin-left:auto;display:flex;gap:8px;">'
+    + '<button onclick="vaciarVentas()" style="display:'+btnRole+';align-items:center;gap:6px;background:transparent;color:var(--rojo);border:1px solid var(--rojo);font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;cursor:pointer;">🗑 Vaciar datos</button>'
+    + '<button onclick="abrirImportVentas()" style="display:'+btnRole+';align-items:center;gap:6px;background:#1D6F42;color:#fff;font-weight:600;font-size:12px;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;">🔄 Reimportar</button>'
+    + '</div></div>'
+    + '<div id="tabla-vv-wrap"></div>';
 
   document.getElementById('ventas-contenido').innerHTML = contenido;
   renderTablaVV();
