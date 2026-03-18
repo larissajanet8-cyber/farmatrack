@@ -81,9 +81,10 @@
   /* APP */
   #app{display:none;min-height:100vh;display:flex;}
   .sidebar{position:fixed;left:0;top:0;bottom:0;width:230px;background:var(--card);border-right:1px solid var(--border);z-index:100;display:flex;flex-direction:column;transition:.3s;}
-  .sidebar-brand{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
-  .sidebar-brand-icon{width:34px;height:34px;background:var(--verde);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
-  .sidebar-brand-name{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;}
+  .sidebar-brand{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+  .sidebar-brand-icon{width:40px;height:40px;background:var(--verde);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 16px rgba(0,200,150,0.3);}
+  .sidebar-brand-box{display:none;}
+  .sidebar-brand-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;white-space:nowrap;}
   .sidebar-brand-name span{color:var(--verde);}
   .sidebar-user{padding:12px 20px;border-bottom:1px solid var(--border);}
   .sidebar-user-name{font-size:13px;font-weight:500;color:var(--text);}
@@ -325,20 +326,21 @@
   <div class="login-wrap">
     <div class="logo-area">
       <div class="logo-icon">
-        <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Pill 1: diagonal top-right -->
-  <g transform="rotate(-40 16 16) translate(-2 -3)">
-    <rect x="6" y="12" width="22" height="9" rx="4.5" fill="#1A2540" opacity="0.3"/>
-    <rect x="6" y="12" width="11" height="9" rx="4.5" fill="white" opacity="0.95"/>
-    <rect x="17" y="12" width="11" height="9" rx="4.5" fill="#FF6060" opacity="0.9"/>
-    <line x1="17" y1="12" x2="17" y2="21" stroke="white" stroke-width="0.8" opacity="0.5"/>
+        <svg width="26" height="26" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pill 1 (back, lower-left) -->
+  <g transform="rotate(-35,26,30) translate(2,8)">
+    <rect x="4" y="16" width="36" height="15" rx="7.5" fill="#2A3A5C"/>
+    <rect x="5" y="17" width="17" height="13" rx="6.5" fill="#EDEDF0"/>
+    <rect x="22" y="17" width="17" height="13" rx="6.5" fill="#D94F4F"/>
+    <rect x="21.5" y="17" width="2" height="13" fill="white" opacity="0.5"/>
   </g>
-  <!-- Pill 2: diagonal bottom-left, slightly behind -->
-  <g transform="rotate(-40 16 16) translate(2 5)">
-    <rect x="4" y="11" width="22" height="9" rx="4.5" fill="#1A2540" opacity="0.2"/>
-    <rect x="4" y="11" width="11" height="9" rx="4.5" fill="white" opacity="0.7"/>
-    <rect x="15" y="11" width="11" height="9" rx="4.5" fill="#FF6060" opacity="0.65"/>
-    <line x1="15" y1="11" x2="15" y2="20" stroke="white" stroke-width="0.8" opacity="0.3"/>
+  <!-- Pill 2 (front, upper-right) -->
+  <g transform="rotate(-35,26,22) translate(-2,-6)">
+    <rect x="4" y="16" width="36" height="15" rx="7.5" fill="#2A3A5C"/>
+    <rect x="5" y="17" width="17" height="13" rx="6.5" fill="#EDEDF0"/>
+    <rect x="22" y="17" width="17" height="13" rx="6.5" fill="#D94F4F"/>
+    <rect x="21.5" y="17" width="2" height="13" fill="white" opacity="0.5"/>
+    <rect x="8" y="19" width="9" height="3" rx="1.5" fill="white" opacity="0.35"/>
   </g>
 </svg>
       </div>
@@ -378,20 +380,19 @@
   <div class="sidebar" id="sidebar">
     <div class="sidebar-brand">
       <div class="sidebar-brand-icon">
-        <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Pill 1: diagonal top-right -->
-  <g transform="rotate(-40 16 16) translate(-2 -3)">
-    <rect x="6" y="12" width="22" height="9" rx="4.5" fill="#1A2540" opacity="0.3"/>
-    <rect x="6" y="12" width="11" height="9" rx="4.5" fill="white" opacity="0.95"/>
-    <rect x="17" y="12" width="11" height="9" rx="4.5" fill="#FF6060" opacity="0.9"/>
-    <line x1="17" y1="12" x2="17" y2="21" stroke="white" stroke-width="0.8" opacity="0.5"/>
+        <svg width="28" height="28" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="rotate(-35,26,30) translate(2,8)">
+    <rect x="4" y="16" width="36" height="15" rx="7.5" fill="#1A2A40"/>
+    <rect x="5" y="17" width="17" height="13" rx="6.5" fill="#F0F0F0"/>
+    <rect x="22" y="17" width="17" height="13" rx="6.5" fill="#D94F4F"/>
+    <rect x="21.5" y="17" width="2" height="13" fill="white" opacity="0.5"/>
   </g>
-  <!-- Pill 2: diagonal bottom-left, slightly behind -->
-  <g transform="rotate(-40 16 16) translate(2 5)">
-    <rect x="4" y="11" width="22" height="9" rx="4.5" fill="#1A2540" opacity="0.2"/>
-    <rect x="4" y="11" width="11" height="9" rx="4.5" fill="white" opacity="0.7"/>
-    <rect x="15" y="11" width="11" height="9" rx="4.5" fill="#FF6060" opacity="0.65"/>
-    <line x1="15" y1="11" x2="15" y2="20" stroke="white" stroke-width="0.8" opacity="0.3"/>
+  <g transform="rotate(-35,26,22) translate(-2,-6)">
+    <rect x="4" y="16" width="36" height="15" rx="7.5" fill="#1A2A40"/>
+    <rect x="5" y="17" width="17" height="13" rx="6.5" fill="#F0F0F0"/>
+    <rect x="22" y="17" width="17" height="13" rx="6.5" fill="#D94F4F"/>
+    <rect x="21.5" y="17" width="2" height="13" fill="white" opacity="0.5"/>
+    <rect x="8" y="19" width="9" height="3" rx="1.5" fill="white" opacity="0.35"/>
   </g>
 </svg>
       </div>
